@@ -11,6 +11,7 @@
 .env.production.local
 /client/.env
 /server/.env
+*.env
 
 # Build files
 /client/build
@@ -20,6 +21,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
 # IDE files
 .idea/
@@ -29,4 +31,21 @@ yarn-error.log*
 
 # OS files
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Sensitive files
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+*.password
+*.secret
+*secret*
+*credential*
+*auth*
+*token*
+*api_key*
+*apikey*
+*api-key* 
