@@ -6,7 +6,7 @@ function PrivateRoute({ children, role }) {
   const userRole = localStorage.getItem('role');
   const token = localStorage.getItem('token');
 
-  if (!token || userRole !== role) {
+  if (!token || userRole !== role.toUpperCase()) {
     return <Navigate to="/" />;
   }
 

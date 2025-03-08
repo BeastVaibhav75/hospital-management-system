@@ -1,0 +1,44 @@
+.navbar {
+  padding: 1rem 0;
+  transition: all 0.3s ease;
+}
+
+.navbar-light {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.nav-link {
+  font-weight: 500;
+  color: #333 !important;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #0d6efd !important;
+}
+
+.navbar-toggler {
+  border: none;
+  padding: 0.5rem;
+}
+
+.navbar-toggler:focus {
+  box-shadow: none;
+  outline: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991px) {
+  .navbar-nav {
+    padding: 1rem 0;
+  }
+  
+  .nav-link {
+    padding: 0.5rem 0;
+  }
+} 

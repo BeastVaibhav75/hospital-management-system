@@ -1,59 +1,97 @@
 // client/src/components/Doctor/DoctorLogin.js
-import React, { useState } from 'react';
-import NavBar from '../NavBar'; // Importing the NavBar component
-
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, TextField, Container, Typography, Box } from '@mui/material';
+import { Form, Button, Alert } from 'react-bootstrap';
+import axios from 'axios';
 
 function DoctorLogin() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const role = 'doctor';
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  // Check if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    if (token && role === 'DOCTOR') {
+      navigate('/doctor/dashboard');
+    }
+  }, [navigate]);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
     try {
-      const res = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, {
-        username,
-        password,
-        role,
-      });
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('role', res.data.role);
-      navigate(`/doctor`);
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/auth/login`,
+        {
+          ...formData,
+          role: 'doctor'
+        }
+      );
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('role', 'DOCTOR');
+      navigate('/doctor/dashboard', { replace: true });
     } catch (err) {
-      console.error(err);
-      alert('Login failed');
+      setError(err.response?.data?.message || 'An error occurred during login');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box mt={5} p={3} bgcolor="#f5f5f5" borderRadius={5}>
-        <Typography variant="h4" gutterBottom>
-          Doctor Login
-        </Typography>
-        <TextField
-          label="Username"
-          fullWidth
-          margin="normal"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-        <TextField
-          label="Password"
-          type="password"
-          fullWidth
-          margin="normal"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <Button variant="contained" color="primary" fullWidth onClick={handleLogin}>
-          Login
-        </Button>
-      </Box>
-    </Container>
+    <div className="auth-container">
+      <h2>Doctor Login</h2>
+      {error && <Alert variant="danger">{error}</Alert>}
+      <Form onSubmit={handleSubmit}>
+        <Form.Group className="mb-3">
+          <Form.Label>Username</Form.Label>
+          <Form.Control
+            type="text"
+            name="username"
+            placeholder="Enter your username"
+            value={formData.username}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Password</Form.Label>
+          <Form.Control
+            type="password"
+            name="password"
+            placeholder="Enter your password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
+        </Form.Group>
+
+        <div className="d-grid gap-2">
+          <Button 
+            variant="success" 
+            type="submit" 
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </Button>
+        </div>
+      </Form>
+    </div>
   );
 }
 

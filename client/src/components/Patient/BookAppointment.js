@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-
-
 import axios from 'axios';
 
 function BookAppointment() {
@@ -11,7 +9,7 @@ function BookAppointment() {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/doctors`, {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/public/doctors`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
@@ -47,24 +45,45 @@ function BookAppointment() {
   };
 
   return (
-    <div>
-      
-
-      <h2>Book an Appointment</h2>
-      <select value={doctorId} onChange={(e) => setDoctorId(e.target.value)}>
-        <option value="">Select Doctor</option>
-        {doctors.map((doctor) => (
-          <option key={doctor.id} value={doctor.id}>
-            Dr. {doctor.name}
-          </option>
-        ))}
-      </select>
-      <input
-        type="datetime-local"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-      />
-      <button onClick={handleBooking}>Book Appointment</button>
+    <div className="container mt-5">
+      <div className="card">
+        <div className="card-body">
+          <h2 className="card-title mb-4">Book an Appointment</h2>
+          <div className="form-group mb-3">
+            <label htmlFor="doctorSelect">Select Doctor</label>
+            <select 
+              id="doctorSelect"
+              className="form-control" 
+              value={doctorId} 
+              onChange={(e) => setDoctorId(e.target.value)}
+            >
+              <option value="">Choose a doctor...</option>
+              {doctors.map((doctor) => (
+                <option key={doctor.id} value={doctor.id}>
+                  Dr. {doctor.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group mb-3">
+            <label htmlFor="appointmentDate">Appointment Date & Time</label>
+            <input
+              id="appointmentDate"
+              type="datetime-local"
+              className="form-control"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <button 
+            className="btn btn-primary"
+            onClick={handleBooking}
+            disabled={!doctorId || !date}
+          >
+            Book Appointment
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
