@@ -1,7 +1,11 @@
 // client/src/components/Patient/PatientLogin.js
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Form, Button, Alert } from 'react-bootstrap';
+import { useNavigate, Link } from 'react-router-dom';
+import { Alert } from 'react-bootstrap';
+import { Container, Box, Avatar, Typography, TextField, Grid, Button, InputAdornment, IconButton } from '@mui/material';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import axios from 'axios';
 
 function PatientLogin() {
@@ -12,6 +16,7 @@ function PatientLogin() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Check if already logged in
   useEffect(() => {
@@ -34,64 +39,152 @@ function PatientLogin() {
     setLoading(true);
     setError('');
 
+    // Validate input
+    if (!formData.username || !formData.password) {
+      setError('Please fill in all fields');
+      setLoading(false);
+      return;
+    }
+
     try {
+      console.log('Attempting login with:', { 
+        username: formData.username, 
+        role: 'PATIENT'
+      });
+
+      // Login to get the token and user info
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/auth/login`,
+        'http://localhost:5000/api/auth/login',
         {
           ...formData,
-          role: 'patient'
+          role: 'PATIENT'
         }
       );
-      localStorage.setItem('token', response.data.token);
+
+      console.log('Login response:', response.data);
+
+      const { token, user } = response.data;
+
+      if (!token || !user) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Store all necessary information
+      localStorage.setItem('token', token);
       localStorage.setItem('role', 'PATIENT');
-      navigate('/patient/dashboard', { replace: true });
+      localStorage.setItem('userInfo', JSON.stringify(user));
+
+      console.log('Login successful, stored data:', {
+        token,
+        role: 'PATIENT',
+        userInfo: user
+      });
+
+      navigate('/patient/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'An error occurred during login');
+      console.error('Login error:', err);
+      if (err.response) {
+        // Server responded with an error
+        setError(err.response.data.message || 'Login failed. Please check your credentials.');
+      } else if (err.request) {
+        // Request was made but no response
+        setError('Unable to connect to the server. Please try again later.');
+      } else {
+        // Something else went wrong
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <h2>Patient Login</h2>
-      {error && <Alert variant="danger">{error}</Alert>}
-      <Form onSubmit={handleSubmit}>
-        <Form.Group className="mb-3">
-          <Form.Label>Username</Form.Label>
-          <Form.Control
-            type="text"
+    <Container component="main" maxWidth="xs">
+      <Box
+        sx={{
+          marginTop: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          bgcolor: 'background.paper',
+          p: 4,
+          borderRadius: 2,
+          boxShadow: 3,
+        }}
+      >
+        <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+          <LockOutlinedIcon />
+        </Avatar>
+        <Typography component="h1" variant="h5">
+          Patient Login
+        </Typography>
+        {error && (
+          <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
+        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="username"
+            label="Username"
             name="username"
-            placeholder="Enter your username"
+            autoComplete="username"
+            autoFocus
             value={formData.username}
             onChange={handleChange}
-            required
           />
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Password</Form.Label>
-          <Form.Control
-            type="password"
+          <TextField
+            margin="normal"
+            required
+            fullWidth
             name="password"
-            placeholder="Enter your password"
+            label="Password"
+            type={showPassword ? 'text' : 'password'}
+            id="password"
+            autoComplete="current-password"
             value={formData.password}
             onChange={handleChange}
-            required
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
-        </Form.Group>
-
-        <div className="d-grid gap-2">
-          <Button 
-            variant="primary" 
-            type="submit" 
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Signing in...' : 'Sign In'}
           </Button>
-        </div>
-      </Form>
-    </div>
+          <Grid container>
+            <Grid item xs>
+              <Link to="/forgot-password" style={{ textDecoration: 'none', color: 'primary.main' }}>
+                Forgot password?
+              </Link>
+            </Grid>
+            <Grid item>
+              <Link to="/signup" style={{ textDecoration: 'none', color: 'primary.main' }}>
+                {"Don't have an account? Sign Up"}
+              </Link>
+            </Grid>
+          </Grid>
+        </Box>
+      </Box>
+    </Container>
   );
 }
 

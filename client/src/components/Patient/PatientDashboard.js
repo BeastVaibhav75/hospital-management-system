@@ -1,6 +1,6 @@
 // client/src/components/Patient/PatientDashboard.js
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card } from 'react-bootstrap';
+import { Container, Row, Col, Card, Modal, Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { FaCalendarPlus, FaHistory, FaCommentMedical, FaFileInvoiceDollar } from 'react-icons/fa';
 import axios from 'axios';
@@ -14,21 +14,59 @@ function PatientDashboard() {
     completedAppointments: 0,
     pendingBills: 0
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userName, setUserName] = useState('');
+  const [showComingSoon, setShowComingSoon] = useState(false);
+
+  // Function to get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+        if (!userInfo || !userInfo.id) {
+          throw new Error('User information not found');
+        }
+
+        // Set user name from local storage
+        setUserName(userInfo.name || '');
+
         const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/patient/dashboard-stats`,
+          `http://localhost:5000/api/appointments/patient/${userInfo.id}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
           }
         );
-        setStats(response.data);
+
+        // Process appointments to get stats
+        const appointments = response.data;
+        const now = new Date();
+        const stats = {
+          totalAppointments: appointments.length,
+          upcomingAppointments: appointments.filter(apt => 
+            new Date(apt.date) > now && 
+            (apt.status === 'booked' || apt.status === 'pending')
+          ).length,
+          completedAppointments: appointments.filter(apt => apt.status === 'completed').length,
+          pendingBills: appointments.filter(apt => apt.status === 'completed' && !apt.paid).length || 0
+        };
+
+        setStats(stats);
+        setError(null);
       } catch (error) {
         console.error('Error fetching stats:', error);
+        setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -36,13 +74,45 @@ function PatientDashboard() {
   }, []);
 
   const handleCardClick = (route) => {
-    navigate(route);
+    if (route === '/patient/bills') {
+      setShowComingSoon(true);
+    } else {
+      navigate(route);
+    }
   };
+
+  if (loading) {
+    return (
+      <Container>
+        <div className="text-center mt-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <div className="alert alert-danger mt-5" role="alert">
+          {error}
+        </div>
+      </Container>
+    );
+  }
 
   return (
     <div className="dashboard-container">
       <Container>
-        <h2 className="dashboard-title">Patient Dashboard</h2>
+        <div className="greeting-section">
+          <h1 className="greeting-text">
+            {getGreeting()}, {userName}!
+          </h1>
+          <p className="greeting-subtitle">Welcome to your health dashboard</p>
+        </div>
+
         <Row className="g-4">
           <Col md={6} lg={3}>
             <Card 
@@ -138,6 +208,20 @@ function PatientDashboard() {
             </Card>
           </Col>
         </Row>
+
+        <Modal show={showComingSoon} onHide={() => setShowComingSoon(false)} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Coming Soon!</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p>The billing feature is currently under development and will be available soon.</p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowComingSoon(false)}>
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </Container>
     </div>
   );

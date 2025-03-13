@@ -1,39 +1,227 @@
 // client/src/components/Admin/ViewStatistics.js
-import React, { useEffect, useState } from 'react';
-
-
+import React, { useState, useEffect } from 'react';
+import {
+  Container,
+  Paper,
+  Typography,
+  Grid,
+  Box,
+  CircularProgress,
+  Alert
+} from '@mui/material';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+} from 'chart.js';
+import { Bar, Pie } from 'react-chartjs-2';
 import axios from 'axios';
 
-function ViewStatistics() {
-  const [stats, setStats] = useState({});
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
+
+const ViewStatistics = () => {
+  const [stats, setStats] = useState({
+    totalPatients: 0,
+    totalDoctors: 0,
+    totalAppointments: 0,
+    appointmentsByMonth: [],
+    doctorsBySpecialization: [],
+    patientGrowth: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchStatistics = async () => {
+    const fetchStats = async () => {
       try {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/admin/stats`, {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Please login to view statistics');
+          setLoading(false);
+          return;
+        }
+
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/admin/stats`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
+            Authorization: `Bearer ${token}`
+          }
         });
-        setStats(res.data);
+        console.log('Stats response:', response.data);
+        setStats(response.data);
+        setLoading(false);
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching stats:', err);
+        setError(err.response?.data?.message || 'Failed to fetch statistics');
+        setLoading(false);
       }
     };
-    fetchStatistics();
+
+    fetchStats();
   }, []);
 
-  return (
-    <div>
-      
+  // Chart data for appointments by month
+  const appointmentsData = {
+    labels: stats.appointmentsByMonth?.map(item => item.month) || [],
+    datasets: [
+      {
+        label: 'Appointments',
+        data: stats.appointmentsByMonth?.map(item => item.count) || [],
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }
+    ]
+  };
 
-      <h2>Hospital Statistics</h2>
-      <p><strong>Total Patients:</strong> {stats.totalPatients}</p>
-      <p><strong>Total Doctors:</strong> {stats.totalDoctors}</p>
-      <p><strong>Total Appointments:</strong> {stats.totalAppointments}</p>
-      {/* Add more stats as needed */}
-    </div>
+  // Chart data for doctors by specialization
+  const doctorsData = {
+    labels: stats.doctorsBySpecialization?.map(item => item.specialization) || [],
+    datasets: [
+      {
+        data: stats.doctorsBySpecialization?.map(item => item.count) || [],
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.5)',
+          'rgba(54, 162, 235, 0.5)',
+          'rgba(255, 206, 86, 0.5)',
+          'rgba(75, 192, 192, 0.5)',
+          'rgba(153, 102, 255, 0.5)'
+        ],
+        borderColor: [
+          'rgba(255, 99, 132, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 206, 86, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(153, 102, 255, 1)'
+        ],
+        borderWidth: 1
+      }
+    ]
+  };
+
+  // Chart data for patient growth
+  const patientGrowthData = {
+    labels: stats.patientGrowth?.map(item => item.month) || [],
+    datasets: [
+      {
+        label: 'New Patients',
+        data: stats.patientGrowth?.map(item => item.count) || [],
+        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'Statistics Overview'
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
+  }
+
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Statistics Dashboard
+      </Typography>
+
+      {/* Summary Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6">Total Patients</Typography>
+            <Typography variant="h4">{stats.totalPatients}</Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6">Total Doctors</Typography>
+            <Typography variant="h4">{stats.totalDoctors}</Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6">Total Appointments</Typography>
+            <Typography variant="h4">{stats.totalAppointments}</Typography>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Charts */}
+      <Grid container spacing={3}>
+        {/* Appointments by Month */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Appointments by Month
+            </Typography>
+            <Bar data={appointmentsData} options={chartOptions} />
+          </Paper>
+        </Grid>
+
+        {/* Doctors by Specialization */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Doctors by Specialization
+            </Typography>
+            <Pie data={doctorsData} options={chartOptions} />
+          </Paper>
+        </Grid>
+
+        {/* Patient Growth */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Patient Growth
+            </Typography>
+            <Bar data={patientGrowthData} options={chartOptions} />
+          </Paper>
+        </Grid>
+      </Grid>
+    </Container>
   );
-}
+};
 
 export default ViewStatistics;

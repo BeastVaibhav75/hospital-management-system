@@ -1,7 +1,8 @@
 // server/models/User.js
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
+
 class User extends Model {}
 
 User.init(
@@ -23,13 +24,59 @@ User.init(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    phone: DataTypes.STRING,
+    phone: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        isValidPhone(value) {
+          if (value === null || value === '') return; // Allow empty/null values
+          if (!/^\+?[1-9]\d{1,14}$/.test(value)) {
+            throw new Error('Invalid phone number format');
+          }
+        }
+      }
+    },
     email: {
       type: DataTypes.STRING,
       unique: true,
       allowNull: false,
+      validate: {
+        isEmail: true,
+      },
     },
-    // Additional fields if necessary
+    specialization: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        isSpecialization(value) {
+          if (this.role === 'doctor' && !value) {
+            throw new Error('Specialization is required for doctors');
+          }
+        }
+      }
+    },
+    experience: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        isExperience(value) {
+          if (this.role === 'doctor' && !value) {
+            throw new Error('Experience is required for doctors');
+          }
+          if (value !== null && (value < 0 || value > 50)) {
+            throw new Error('Experience must be between 0 and 50 years');
+          }
+        }
+      }
+    },
+    otp: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    otpExpiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    }
   },
   {
     sequelize,
@@ -37,16 +84,13 @@ User.init(
   }
 );
 
-// Hash password before saving
+// Hash password before saving only if it's not already hashed
 User.beforeCreate(async (user) => {
-  if (user.password) {
-    console.log('Before hashing, plaintext password:', user.password);
+  if (user.password && !user.password.startsWith('$2')) {
+    console.log('Hashing password for user:', user.username);
     const saltRounds = 10;
     const hashed = await bcrypt.hash(user.password, saltRounds);
-    console.log('Hashed password:', hashed);
     user.password = hashed;
-  } else {
-    console.log('No password provided for user:', user.username);
   }
 });
 

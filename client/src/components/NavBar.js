@@ -25,7 +25,7 @@ function NavBar() {
           <Nav className="ms-auto">
             {!isAuthenticated ? (
               <>
-                <Nav.Link as={Link} to="/login" className="me-3">
+                <Nav.Link as={Link} to="/patient/login" className="me-3">
                   Login
                 </Nav.Link>
                 <Nav.Link as={Link} to="/signup" className="me-3">
