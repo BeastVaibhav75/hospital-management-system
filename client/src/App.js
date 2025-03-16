@@ -17,6 +17,7 @@ import ForgotPassword from './components/ForgotPassword';
 import PrivateRoute from './components/PrivateRoute';
 import BookAppointment from './components/BookAppointment';
 import ViewAppointments from './components/Doctor/ViewAppointments';
+import TodayAppointments from './components/Doctor/TodayAppointments';
 import ViewStatistics from './components/Admin/ViewStatistics';
 import ManageUsers from './components/Admin/ManageUsers';
 import ManageDoctors from './components/Admin/ManageDoctors';
@@ -51,7 +52,7 @@ function App() {
             <Route path="/doctor" element={<PrivateRoute role="doctor"><DoctorDashboard /></PrivateRoute>} />
             <Route path="/doctor/dashboard" element={<PrivateRoute role="doctor"><DoctorDashboard /></PrivateRoute>} />
             <Route path="/doctor/appointments" element={<PrivateRoute role="doctor"><ViewAppointments /></PrivateRoute>} />
-            <Route path="/doctor/today-appointments" element={<PrivateRoute role="doctor"><ViewAppointments filter="today" /></PrivateRoute>} />
+            <Route path="/doctor/today-appointments" element={<PrivateRoute role="doctor"><TodayAppointments /></PrivateRoute>} />
             <Route path="/doctor/patients" element={<PrivateRoute role="doctor"><ViewAppointments filter="patients" /></PrivateRoute>} />
             
             {/* Patient Routes */}

@@ -1,6 +1,6 @@
 // client/src/components/Doctor/DoctorDashboard.js
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card } from 'react-bootstrap';
+import { Container, Row, Col, Card, Alert } from 'react-bootstrap';
 import { FaCalendarCheck, FaUserInjured, FaClock, FaList } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -13,35 +13,73 @@ function DoctorDashboard() {
     todayAppointments: 0,
     totalPatients: 0
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/doctor/login');
+          return;
+        }
+
         const response = await axios.get(
           `${process.env.REACT_APP_API_URL}/doctor/dashboard-stats`,
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
+              'Authorization': `Bearer ${token}`
+            }
           }
         );
-        setStats(response.data);
+
+        if (response.data) {
+          setStats(response.data);
+          setError('');
+        }
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          navigate('/doctor/login');
+        } else {
+          setError('Failed to load dashboard statistics. Please try again later.');
+        }
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchDashboardStats();
-  }, []);
+  }, [navigate]);
 
   const handleCardClick = (route) => {
     navigate(route);
   };
 
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <Container>
+          <div className="text-center py-5">Loading...</div>
+        </Container>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-container">
       <Container>
         <h2 className="dashboard-title">Doctor Dashboard</h2>
+        
+        {error && (
+          <Alert variant="danger" className="mb-4">
+            {error}
+          </Alert>
+        )}
+
         <Row className="g-4">
           <Col md={6} lg={3}>
             <Card 

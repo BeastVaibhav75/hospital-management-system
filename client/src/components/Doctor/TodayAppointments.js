@@ -1,4 +1,3 @@
-// client/src/components/Doctor/ViewAppointments.js
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -20,11 +19,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField
+  TextField,
+  Chip
 } from '@mui/material';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 
-function ViewAppointments() {
+function TodayAppointments() {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
@@ -37,32 +37,21 @@ function ViewAppointments() {
     testResults: ''
   });
 
-  const getUserInfo = () => {
-    try {
-      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const token = localStorage.getItem('token');
-      return { userInfo, token };
-    } catch (error) {
-      console.error('Error parsing user info:', error);
-      return { userInfo: null, token: null };
-    }
-  };
-
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const fetchTodayAppointments = async () => {
       const token = localStorage.getItem('token');
       
       if (!token) {
         setError('Please log in to view appointments');
         setTimeout(() => {
-          navigate('/doctor/login', { state: { from: '/doctor/appointments' } });
+          navigate('/doctor/login', { state: { from: '/doctor/today-appointments' } });
         }, 2000);
         return;
       }
 
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/doctor/appointments`,
+          `${process.env.REACT_APP_API_URL}/doctor/today-appointments`,
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -71,7 +60,12 @@ function ViewAppointments() {
         );
         
         if (response.data) {
-          setAppointments(response.data);
+          // Verify and sort today's appointments
+          const todayAppointments = response.data.filter(appointment => 
+            isToday(new Date(appointment.date))
+          ).sort((a, b) => new Date(a.date) - new Date(b.date));
+          
+          setAppointments(todayAppointments);
           setError('');
         }
       } catch (err) {
@@ -81,7 +75,7 @@ function ViewAppointments() {
           localStorage.removeItem('token');
           localStorage.removeItem('role');
           setTimeout(() => {
-            navigate('/doctor/login', { state: { from: '/doctor/appointments' } });
+            navigate('/doctor/login', { state: { from: '/doctor/today-appointments' } });
           }, 2000);
         } else {
           setError('Failed to fetch appointments. Please try again later.');
@@ -91,10 +85,24 @@ function ViewAppointments() {
       }
     };
 
-    fetchAppointments();
+    fetchTodayAppointments();
+
+    // Refresh appointments every minute
+    const intervalId = setInterval(fetchTodayAppointments, 60000);
+    return () => clearInterval(intervalId);
   }, [navigate]);
 
-  const handleComplete = async (appointmentId) => {
+  const formatAppointmentTime = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, 'hh:mm a');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid Time';
+    }
+  };
+
+  const handleComplete = (appointmentId) => {
     setSelectedAppointmentId(appointmentId);
   };
 
@@ -153,15 +161,6 @@ function ViewAppointments() {
     }
   };
 
-  const formatDateTime = (dateString) => {
-    try {
-      const date = new Date(dateString);
-      return format(date, 'MMM dd, yyyy hh:mm a');
-    } catch (error) {
-      return 'Invalid Date';
-    }
-  };
-
   if (loading) {
     return (
       <Container maxWidth="lg">
@@ -175,9 +174,21 @@ function ViewAppointments() {
   return (
     <Container maxWidth="lg">
       <Paper sx={{ p: 4, mt: 4, borderRadius: 2 }}>
-        <Typography variant="h4" gutterBottom color="primary" fontWeight="bold">
-          All Appointments
-        </Typography>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Box>
+            <Typography variant="h4" gutterBottom color="primary" fontWeight="bold">
+              Today's Appointments
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary">
+              {format(new Date(), 'EEEE, MMMM d, yyyy')}
+            </Typography>
+          </Box>
+          <Chip 
+            label={`${appointments.length} Appointment${appointments.length !== 1 ? 's' : ''}`}
+            color="primary"
+            sx={{ fontSize: '1rem', py: 2, px: 1 }}
+          />
+        </Box>
 
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
@@ -198,35 +209,56 @@ function ViewAppointments() {
         )}
 
         {appointments.length === 0 ? (
-          <Alert severity="info">No appointments found.</Alert>
+          <Alert severity="info" sx={{ fontSize: '1rem', py: 2 }}>
+            No appointments scheduled for today.
+          </Alert>
         ) : (
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Date & Time</TableCell>
-                  <TableCell>Patient Name</TableCell>
-                  <TableCell>Contact</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell width="15%">Time</TableCell>
+                  <TableCell width="25%">Patient Name</TableCell>
+                  <TableCell width="30%">Contact</TableCell>
+                  <TableCell width="15%">Status</TableCell>
+                  <TableCell width="15%">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {appointments.map((appointment) => (
                   <TableRow key={appointment.id}>
-                    <TableCell>{formatDateTime(appointment.date)}</TableCell>
-                    <TableCell>{appointment.patient.name}</TableCell>
                     <TableCell>
-                      {appointment.patient.phone}<br/>
-                      {appointment.patient.email}
+                      <Typography variant="body1" fontWeight="medium">
+                        {formatAppointmentTime(appointment.date)}
+                      </Typography>
                     </TableCell>
-                    <TableCell>{appointment.status}</TableCell>
+                    <TableCell>
+                      <Typography variant="body1">
+                        {appointment.patient.name}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {appointment.patient.phone}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {appointment.patient.email}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                        color={appointment.status === 'completed' ? 'success' : 'primary'}
+                        variant="outlined"
+                      />
+                    </TableCell>
                     <TableCell>
                       {appointment.status === 'booked' && (
                         <Button
                           variant="contained"
                           color="primary"
                           onClick={() => handleComplete(appointment.id)}
+                          size="small"
                         >
                           Complete
                         </Button>
@@ -291,4 +323,4 @@ function ViewAppointments() {
   );
 }
 
-export default ViewAppointments;
+export default TodayAppointments; 
