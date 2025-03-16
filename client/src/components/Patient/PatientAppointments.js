@@ -148,7 +148,7 @@ function PatientAppointments() {
 
     setFeedbackLoading(true);
     try {
-      await axios.post(
+      await axios.put(
         `http://localhost:5000/api/appointments/${selectedAppointment.id}/feedback`,
         {
           rating,

@@ -1,5 +1,5 @@
 .dashboard-container {
-  padding: 2rem;
+  padding: 2rem 0;
   background-color: #f8f9fa;
   min-height: calc(100vh - 76px);
 }
@@ -23,45 +23,111 @@
   border-radius: 2px;
 }
 
+.greeting-section {
+  margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.greeting-text {
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.greeting-subtitle {
+  font-size: 1.1rem;
+  color: #6c757d;
+  margin-bottom: 0;
+}
+
 .dashboard-card {
   background: white;
   border: none;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
   cursor: pointer;
   overflow: hidden;
+  height: 100%;
+  padding: 1.25rem;
 }
 
 .dashboard-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.card-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .icon-wrapper {
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.card-info {
+  flex-grow: 1;
 }
 
 .dashboard-icon {
-  color: white;
   font-size: 1.5rem;
 }
 
 .card-subtitle {
   color: #6c757d;
-  font-size: 0.875rem;
   margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .card-value {
   color: #2c3e50;
-  font-weight: 600;
   margin: 0;
+  font-weight: 600;
+  font-size: 1.75rem !important;
+  line-height: 1 !important;
+}
+
+.quick-actions {
+  background: white;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.quick-action-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.quick-action-button:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
 }
 
 /* Background colors for icon wrappers */

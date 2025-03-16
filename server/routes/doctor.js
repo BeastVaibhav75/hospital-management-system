@@ -154,4 +154,55 @@ router.get('/attendance', async (req, res) => {
   }
 });
 
+// Get doctor's patients with feedback and visit details
+router.get('/patients', async (req, res) => {
+  try {
+    const appointments = await Appointment.findAll({
+      where: { doctorId: req.userId },
+      include: [
+        {
+          model: User,
+          as: 'patient',
+          attributes: ['id', 'name', 'email', 'phone']
+        }
+      ],
+      order: [['date', 'DESC']]
+    });
+
+    // Process appointments to get patient details
+    const patientsMap = new Map();
+    appointments.forEach(appointment => {
+      const patient = appointment.patient;
+      if (!patientsMap.has(patient.id)) {
+        patientsMap.set(patient.id, {
+          id: patient.id,
+          name: patient.name,
+          email: patient.email,
+          phone: patient.phone,
+          lastVisit: appointment.date,
+          totalVisits: 1,
+          latestAppointmentStatus: appointment.status,
+          feedback: appointment.feedback // Using the existing feedback field
+        });
+      } else {
+        const existingPatient = patientsMap.get(patient.id);
+        existingPatient.totalVisits++;
+        if (new Date(appointment.date) > new Date(existingPatient.lastVisit)) {
+          existingPatient.lastVisit = appointment.date;
+          existingPatient.latestAppointmentStatus = appointment.status;
+          if (appointment.feedback) {
+            existingPatient.feedback = appointment.feedback;
+          }
+        }
+      }
+    });
+
+    const patients = Array.from(patientsMap.values());
+    res.json(patients);
+  } catch (err) {
+    console.error('Error fetching patients:', err);
+    res.status(500).json({ message: 'Failed to fetch patients' });
+  }
+});
+
 module.exports = router;

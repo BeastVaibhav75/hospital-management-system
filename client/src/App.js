@@ -26,6 +26,8 @@ import PatientAppointments from './components/Patient/PatientAppointments';
 import MedicalHistory from './components/Patient/MedicalHistory';
 import ProvideFeedback from './components/Patient/ProvideFeedback';
 import PatientBills from './components/Patient/PatientBills';
+import ManageAppointments from './components/Admin/ManageAppointments';
+import DoctorPatients from './components/Doctor/DoctorPatients';
 
 function App() {
   return (
@@ -47,13 +49,18 @@ function App() {
             <Route path="/admin/statistics" element={<PrivateRoute role="admin"><ViewStatistics /></PrivateRoute>} />
             <Route path="/admin/doctors" element={<PrivateRoute role="admin"><ManageDoctors /></PrivateRoute>} />
             <Route path="/admin/patients" element={<PrivateRoute role="admin"><ManagePatients /></PrivateRoute>} />
+            <Route path="/admin/appointments" element={<PrivateRoute role="admin"><ManageAppointments /></PrivateRoute>} />
             
             {/* Doctor Routes */}
             <Route path="/doctor" element={<PrivateRoute role="doctor"><DoctorDashboard /></PrivateRoute>} />
             <Route path="/doctor/dashboard" element={<PrivateRoute role="doctor"><DoctorDashboard /></PrivateRoute>} />
             <Route path="/doctor/appointments" element={<PrivateRoute role="doctor"><ViewAppointments /></PrivateRoute>} />
             <Route path="/doctor/today-appointments" element={<PrivateRoute role="doctor"><TodayAppointments /></PrivateRoute>} />
-            <Route path="/doctor/patients" element={<PrivateRoute role="doctor"><ViewAppointments filter="patients" /></PrivateRoute>} />
+            <Route path="/doctor/patients" element={
+              <PrivateRoute role="doctor">
+                <DoctorPatients />
+              </PrivateRoute>
+            } />
             
             {/* Patient Routes */}
             <Route path="/patient" element={<PrivateRoute role="patient"><PatientDashboard /></PrivateRoute>} />

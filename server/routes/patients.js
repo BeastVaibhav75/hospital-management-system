@@ -114,9 +114,12 @@ router.post('/:id/medical-records', auth, async (req, res) => {
     const { diagnosis, symptoms, medications, notes } = req.body;
 
     // Validate required fields
-    if (!diagnosis || !symptoms || !medications) {
+    if (!diagnosis || !symptoms) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
+
+    // Ensure medications is an array
+    const formattedMedications = Array.isArray(medications) ? medications : [];
 
     // Create medical record
     const record = await MedicalRecord.create({
@@ -124,7 +127,7 @@ router.post('/:id/medical-records', auth, async (req, res) => {
       doctorId: req.user.id,
       diagnosis,
       symptoms,
-      medications,
+      medications: formattedMedications,
       notes,
       date: new Date()
     });

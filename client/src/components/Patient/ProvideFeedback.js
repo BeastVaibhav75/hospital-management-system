@@ -2,22 +2,29 @@
 import React, { useState, useEffect } from 'react';
 import {
   Container,
-  Card,
-  Form,
+  Paper,
+  Typography,
   Button,
+  Rating,
+  TextField,
   Alert,
-  Spinner
-} from 'react-bootstrap';
-import { FaPaperPlane } from 'react-icons/fa';
+  CircularProgress,
+  Box,
+  Card,
+  CardContent,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
+} from '@mui/material';
 import axios from 'axios';
-import './ProvideFeedback.css';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { format } from 'date-fns';
 
 function ProvideFeedback() {
   const [appointments, setAppointments] = useState([]);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState('');
-  const [feedback, setFeedback] = useState('');
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -35,7 +42,7 @@ function ProvideFeedback() {
         }
 
         const response = await axios.get(
-          `${API_URL}/appointments/patient/${userInfo.id}`,
+          `http://localhost:5000/api/appointments/patient/${userInfo.id}`,
           {
             headers: { 
               Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -47,12 +54,14 @@ function ProvideFeedback() {
           throw new Error('No data received from server');
         }
 
-        // Filter only completed appointments
-        const completedAppointments = response.data.filter(app => app.status === 'completed');
-        setAppointments(completedAppointments);
+        // Filter only completed appointments without feedback
+        const eligibleAppointments = response.data.filter(app => 
+          app.status === 'completed' && !app.feedback
+        );
+        setAppointments(eligibleAppointments);
 
-        if (completedAppointments.length === 0) {
-          setError('No completed appointments found');
+        if (eligibleAppointments.length === 0) {
+          setError('No completed appointments available for feedback');
         }
       } catch (err) {
         console.error('Error fetching appointments:', err);
@@ -69,14 +78,14 @@ function ProvideFeedback() {
     fetchAppointments();
   }, []);
 
-  const submitFeedback = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedAppointmentId) {
       setError('Please select an appointment');
       return;
     }
-    if (!feedback.trim()) {
-      setError('Please enter your feedback');
+    if (rating === 0) {
+      setError('Please provide a rating');
       return;
     }
 
@@ -84,9 +93,12 @@ function ProvideFeedback() {
       setLoading(true);
       setError('');
       
-      await axios.post(
-        `${API_URL}/appointments/${selectedAppointmentId}/feedback`,
-        { feedback },
+      await axios.put(
+        `http://localhost:5000/api/appointments/${selectedAppointmentId}/feedback`,
+        {
+          rating,
+          comment
+        },
         { 
           headers: { 
             Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -95,8 +107,12 @@ function ProvideFeedback() {
       );
 
       setSuccess('Thank you for your feedback!');
-      setFeedback('');
+      setRating(0);
+      setComment('');
       setSelectedAppointmentId('');
+      
+      // Remove the appointment that just received feedback
+      setAppointments(prev => prev.filter(app => app.id !== selectedAppointmentId));
     } catch (err) {
       console.error('Error submitting feedback:', err);
       setError(
@@ -109,115 +125,96 @@ function ProvideFeedback() {
     }
   };
 
-  const formatDate = (dateString) => {
-    const options = { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+  const formatDateTime = (dateString) => {
+    return format(new Date(dateString), 'PPpp'); // e.g., "Apr 29, 2023, 9:00 AM"
   };
 
   if (loading && appointments.length === 0) {
     return (
-      <Container className="feedback-container d-flex justify-content-center align-items-center">
-        <div className="text-center">
-          <Spinner animation="border" variant="primary" />
-          <p className="mt-2">Loading appointments...</p>
-        </div>
+      <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
       </Container>
     );
   }
 
   return (
-    <Container className="feedback-container">
-      <Card className="feedback-card">
-        <Card.Body>
-          <div className="feedback-header">
-            <h2>We Value Your Feedback</h2>
-            <p className="text-muted">
-              Please share your experience about your completed appointments
-            </p>
-          </div>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Paper sx={{ p: 4 }}>
+        <Typography variant="h4" gutterBottom align="center" color="primary">
+          We Value Your Feedback
+        </Typography>
+        <Typography variant="subtitle1" gutterBottom align="center" color="text.secondary" sx={{ mb: 4 }}>
+          Please share your experience about your completed appointments
+        </Typography>
 
-          {error && (
-            <Alert variant="danger" className="mb-4" dismissible onClose={() => setError('')}>
-              {error}
-            </Alert>
-          )}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+            {error}
+          </Alert>
+        )}
 
-          {success && (
-            <Alert variant="success" className="mb-4" dismissible onClose={() => setSuccess('')}>
-              {success}
-            </Alert>
-          )}
+        {success && (
+          <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
+            {success}
+          </Alert>
+        )}
 
-          <Form onSubmit={submitFeedback}>
-            <Form.Group className="mb-4">
-              <Form.Label>Select Appointment</Form.Label>
-              <Form.Select
+        {appointments.length === 0 && !loading ? (
+          <Alert severity="info">
+            No completed appointments available for feedback
+          </Alert>
+        ) : (
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel>Select Appointment</InputLabel>
+              <Select
                 value={selectedAppointmentId}
                 onChange={(e) => setSelectedAppointmentId(e.target.value)}
-                disabled={loading || appointments.length === 0}
+                label="Select Appointment"
               >
-                <option value="">Choose an appointment...</option>
-                {appointments.map((app) => (
-                  <option key={app.id} value={app.id}>
-                    {formatDate(app.date)} - Dr. {app.doctor?.name || 'Unknown'}
-                  </option>
+                {appointments.map((appointment) => (
+                  <MenuItem key={appointment.id} value={appointment.id}>
+                    Dr. {appointment.doctor?.name} - {formatDateTime(appointment.date)}
+                  </MenuItem>
                 ))}
-              </Form.Select>
-              {appointments.length === 0 && !loading && (
-                <Form.Text className="text-muted">
-                  No completed appointments available for feedback
-                </Form.Text>
-              )}
-            </Form.Group>
+              </Select>
+            </FormControl>
 
-            <Form.Group className="mb-4">
-              <Form.Label>Your Feedback</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={5}
-                placeholder="Please share your experience with us..."
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                disabled={loading || !selectedAppointmentId}
+            <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Typography component="legend" sx={{ mb: 1 }}>
+                Rate your experience
+              </Typography>
+              <Rating
+                name="rating"
+                value={rating}
+                onChange={(event, newValue) => setRating(newValue)}
+                size="large"
               />
-            </Form.Group>
+            </Box>
 
-            <div className="d-grid">
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                disabled={loading || !selectedAppointmentId || !feedback.trim()}
-              >
-                {loading ? (
-                  <>
-                    <Spinner
-                      as="span"
-                      animation="border"
-                      size="sm"
-                      role="status"
-                      aria-hidden="true"
-                      className="me-2"
-                    />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <FaPaperPlane className="me-2" />
-                    Submit Feedback
-                  </>
-                )}
-              </Button>
-            </div>
-          </Form>
-        </Card.Body>
-      </Card>
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              label="Additional Comments (Optional)"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              sx={{ mb: 3 }}
+            />
+
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              disabled={loading || !selectedAppointmentId || rating === 0}
+              sx={{ mt: 2 }}
+            >
+              {loading ? <CircularProgress size={24} /> : 'Submit Feedback'}
+            </Button>
+          </Box>
+        )}
+      </Paper>
     </Container>
   );
 }

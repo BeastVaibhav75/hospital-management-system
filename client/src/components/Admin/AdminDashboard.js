@@ -3,12 +3,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Container,
   Grid,
-  Paper,
   Typography,
   Box,
-  Card,
-  CardContent,
-  Button,
   CircularProgress,
   Alert
 } from '@mui/material';
@@ -22,6 +18,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import './AdminDashboard.css';
 
 function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -63,32 +60,22 @@ function AdminDashboard() {
       const token = localStorage.getItem('token');
       if (!token) {
         setError('Please login to view dashboard');
-        setLoading(false);
         return;
       }
 
-      console.log('Fetching admin stats...');
-      const response = await axios.get('http://localhost:5000/api/admin/stats', {
-        headers: {
-          Authorization: `Bearer ${token}`
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/admin/stats`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
-      });
-      
-      console.log('Dashboard stats response:', response.data);
-      
-      // Ensure we're getting the correct data structure
-      const statsData = {
-        totalDoctors: response.data.totalDoctors || 0,
-        totalPatients: response.data.totalPatients || 0,
-        totalAppointments: response.data.totalAppointments || 0,
-        appointmentsToday: response.data.appointmentsToday || 0
-      };
-      
-      console.log('Processed stats:', statsData);
-      setStats(statsData);
+      );
+
+      setStats(response.data);
       setError(null);
     } catch (err) {
-      console.error('Error fetching dashboard stats:', err);
+      console.error('Error fetching stats:', err);
       setError(err.response?.data?.message || 'Failed to load dashboard statistics');
     } finally {
       setLoading(false);
@@ -97,129 +84,128 @@ function AdminDashboard() {
 
   if (loading) {
     return (
-      <Container sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container sx={{ mt: 4, mb: 4 }}>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+    <div className="dashboard-container">
+      <Container>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-      {/* Welcome Message */}
-      <Paper sx={{ p: 3, mb: 3, background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)' }}>
-        <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
-          {getGreeting()}, {adminName || 'Admin'}!
-        </Typography>
-        <Typography variant="subtitle1" sx={{ color: 'white', opacity: 0.9 }}>
-          Welcome to your dashboard. Here's an overview of your hospital's current status.
-        </Typography>
-      </Paper>
+        <div className="greeting-section">
+          <h1 className="greeting-text">
+            {getGreeting()}, {adminName}!
+          </h1>
+          <p className="greeting-subtitle">Welcome to your hospital management dashboard</p>
+        </div>
 
-      <Grid container spacing={3}>
-        {/* Statistics Cards */}
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <PeopleIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="h6">Total Doctors</Typography>
-              </Box>
-              <Typography variant="h4">{stats.totalDoctors}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <HospitalIcon sx={{ mr: 1, color: 'success.main' }} />
-                <Typography variant="h6">Total Patients</Typography>
-              </Box>
-              <Typography variant="h4">{stats.totalPatients}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <EventNoteIcon sx={{ mr: 1, color: 'warning.main' }} />
-                <Typography variant="h6">Total Appointments</Typography>
-              </Box>
-              <Typography variant="h4">{stats.totalAppointments}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <EventNoteIcon sx={{ mr: 1, color: 'info.main' }} />
-                <Typography variant="h6">Today's Appointments</Typography>
-              </Box>
-              <Typography variant="h4">{stats.appointmentsToday}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} md={3}>
+            <div className="dashboard-card">
+              <div className="card-content">
+                <div className="icon-wrapper bg-primary">
+                  <HospitalIcon className="dashboard-icon" />
+                </div>
+                <div className="card-info">
+                  <Typography className="card-subtitle">Total Doctors</Typography>
+                  <Typography className="card-value">{stats.totalDoctors}</Typography>
+                </div>
+              </div>
+            </div>
+          </Grid>
 
-        {/* Quick Actions */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h5" sx={{ mb: 2 }}>
-              Quick Actions
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<PersonAddIcon />}
-                  onClick={() => navigate('/admin/doctors')}
-                >
-                  Manage Doctors
-                </Button>
+          <Grid item xs={12} sm={6} md={3}>
+            <div className="dashboard-card">
+              <div className="card-content">
+                <div className="icon-wrapper bg-success">
+                  <PeopleIcon className="dashboard-icon" />
+                </div>
+                <div className="card-info">
+                  <Typography className="card-subtitle">Total Patients</Typography>
+                  <Typography className="card-value">{stats.totalPatients}</Typography>
+                </div>
+              </div>
+            </div>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <div className="dashboard-card">
+              <div className="card-content">
+                <div className="icon-wrapper bg-warning">
+                  <EventNoteIcon className="dashboard-icon" />
+                </div>
+                <div className="card-info">
+                  <Typography className="card-subtitle">Total Appointments</Typography>
+                  <Typography className="card-value">{stats.totalAppointments}</Typography>
+                </div>
+              </div>
+            </div>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <div className="dashboard-card">
+              <div className="card-content">
+                <div className="icon-wrapper bg-info">
+                  <EventNoteIcon className="dashboard-icon" />
+                </div>
+                <div className="card-info">
+                  <Typography className="card-subtitle">Today's Appointments</Typography>
+                  <Typography className="card-value">{stats.appointmentsToday}</Typography>
+                </div>
+              </div>
+            </div>
+          </Grid>
+
+          {/* Quick Actions */}
+          <Grid item xs={12}>
+            <div className="quick-actions">
+              <Typography variant="h5" sx={{ mb: 3 }}>Quick Actions</Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <button
+                    className="quick-action-button"
+                    onClick={() => navigate('/admin/doctors')}
+                  >
+                    <PersonAddIcon /> Manage Doctors
+                  </button>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <button
+                    className="quick-action-button"
+                    onClick={() => navigate('/admin/patients')}
+                  >
+                    <PeopleIcon /> Manage Patients
+                  </button>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <button
+                    className="quick-action-button"
+                    onClick={() => navigate('/admin/statistics')}
+                  >
+                    <AssessmentIcon /> View Statistics
+                  </button>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <button
+                    className="quick-action-button"
+                    onClick={() => navigate('/admin/appointments')}
+                  >
+                    <CalendarMonthIcon /> Manage Appointments
+                  </button>
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<PeopleIcon />}
-                  onClick={() => navigate('/admin/patients')}
-                >
-                  Manage Patients
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<AssessmentIcon />}
-                  onClick={() => navigate('/admin/statistics')}
-                >
-                  View Statistics
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  startIcon={<CalendarMonthIcon />}
-                  onClick={() => navigate('/admin/appointments')}
-                >
-                  Manage Appointments
-                </Button>
-              </Grid>
-            </Grid>
-          </Paper>
+            </div>
+          </Grid>
         </Grid>
-      </Grid>
-    </Container>
+      </Container>
+    </div>
   );
 }
 

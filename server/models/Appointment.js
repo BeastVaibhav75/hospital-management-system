@@ -13,7 +13,7 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'users',
+      model: 'Users',
       key: 'id'
     }
   },
@@ -21,7 +21,7 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'users',
+      model: 'Users',
       key: 'id'
     }
   },
@@ -30,8 +30,16 @@ const Appointment = sequelize.define('Appointment', {
     allowNull: false
   },
   status: {
-    type: DataTypes.ENUM('booked', 'completed', 'cancelled'),
-    defaultValue: 'booked'
+    type: DataTypes.ENUM('pending', 'booked', 'completed', 'cancelled'),
+    defaultValue: 'pending'
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
   },
   feedback: {
     type: DataTypes.TEXT,

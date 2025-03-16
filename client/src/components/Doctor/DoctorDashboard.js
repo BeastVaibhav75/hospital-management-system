@@ -1,7 +1,7 @@
 // client/src/components/Doctor/DoctorDashboard.js
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Alert } from 'react-bootstrap';
-import { FaCalendarCheck, FaUserInjured, FaClock, FaList } from 'react-icons/fa';
+import { FaCalendarCheck, FaUserInjured, FaClock } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './DoctorDashboard.css';
@@ -81,7 +81,7 @@ function DoctorDashboard() {
         )}
 
         <Row className="g-4">
-          <Col md={6} lg={3}>
+          <Col md={6} lg={4}>
             <Card 
               className="dashboard-card"
               onClick={() => handleCardClick('/doctor/appointments')}
@@ -99,7 +99,7 @@ function DoctorDashboard() {
               </Card.Body>
             </Card>
           </Col>
-          <Col md={6} lg={3}>
+          <Col md={6} lg={4}>
             <Card 
               className="dashboard-card"
               onClick={() => handleCardClick('/doctor/today-appointments')}
@@ -117,7 +117,7 @@ function DoctorDashboard() {
               </Card.Body>
             </Card>
           </Col>
-          <Col md={6} lg={3}>
+          <Col md={6} lg={4}>
             <Card 
               className="dashboard-card"
               onClick={() => handleCardClick('/doctor/patients')}
@@ -130,24 +130,6 @@ function DoctorDashboard() {
                   <div className="ms-3">
                     <h6 className="card-subtitle">Total Patients</h6>
                     <h3 className="card-value">{stats.totalPatients}</h3>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-          <Col md={6} lg={3}>
-            <Card 
-              className="dashboard-card"
-              onClick={() => handleCardClick('/doctor/medical-records')}
-            >
-              <Card.Body>
-                <div className="d-flex align-items-center">
-                  <div className="icon-wrapper bg-warning">
-                    <FaList className="dashboard-icon" />
-                  </div>
-                  <div className="ms-3">
-                    <h6 className="card-subtitle">Medical Records</h6>
-                    <h3 className="card-value">View</h3>
                   </div>
                 </div>
               </Card.Body>

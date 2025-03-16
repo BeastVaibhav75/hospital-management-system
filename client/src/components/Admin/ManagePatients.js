@@ -126,9 +126,20 @@ function ManagePatients() {
     }
   };
 
-  const handleViewPatient = (patient) => {
-    setSelectedPatient(patient);
-    setViewDialogOpen(true);
+  const handleViewPatient = async (patient) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`http://localhost:5000/api/admin/patients/${patient.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setSelectedPatient(response.data);
+      setViewDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching patient details:', error);
+      setError('Failed to fetch patient details');
+    }
   };
 
   const handleDeletePatient = async (patientId) => {

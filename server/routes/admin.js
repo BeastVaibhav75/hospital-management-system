@@ -222,6 +222,63 @@ router.delete('/patients/:id', async (req, res) => {
   }
 });
 
+// Get patient details with appointment counts
+router.get('/patients/:patientId', async (req, res) => {
+  try {
+    console.log('Fetching details for patient:', req.params.patientId);
+    
+    const patient = await User.findOne({
+      where: { id: req.params.patientId, role: 'patient' },
+      attributes: ['id', 'name', 'email', 'phone', 'username']
+    });
+
+    if (!patient) {
+      console.log('Patient not found:', req.params.patientId);
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+
+    console.log('Found patient:', patient.id);
+
+    // Get appointment counts
+    const totalAppointments = await Appointment.count({
+      where: { patientId: req.params.patientId }
+    });
+
+    const completedAppointments = await Appointment.count({
+      where: { 
+        patientId: req.params.patientId,
+        status: 'completed'
+      }
+    });
+
+    const pendingAppointments = await Appointment.count({
+      where: { 
+        patientId: req.params.patientId,
+        status: 'booked'
+      }
+    });
+
+    console.log('Appointment counts:', {
+      total: totalAppointments,
+      completed: completedAppointments,
+      pending: pendingAppointments
+    });
+
+    const response = {
+      ...patient.toJSON(),
+      totalAppointments,
+      completedAppointments,
+      pendingAppointments
+    };
+
+    console.log('Sending response:', response);
+    res.json(response);
+  } catch (err) {
+    console.error('Error fetching patient details:', err);
+    res.status(500).json({ message: 'Failed to fetch patient details' });
+  }
+});
+
 // View Statistics
 router.get('/stats', async (req, res) => {
   try {

@@ -118,11 +118,15 @@ function MedicalHistory() {
                         </TableCell>
                         <TableCell>
                           <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                            {record.medications.map((med, index) => (
-                              <li key={index}>
-                                {med.name} - {med.dosage} ({med.frequency})
-                              </li>
-                            ))}
+                            {Array.isArray(record.medications) ? (
+                              record.medications.map((med, index) => (
+                                <li key={index}>
+                                  {med.name} - {med.dosage} ({med.frequency})
+                                </li>
+                              ))
+                            ) : (
+                              <li>No medications recorded</li>
+                            )}
                           </ul>
                         </TableCell>
                       </TableRow>
