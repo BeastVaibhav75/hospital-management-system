@@ -225,20 +225,52 @@ router.delete('/patients/:id', async (req, res) => {
 // View Statistics
 router.get('/stats', async (req, res) => {
   try {
-    // Get total counts
-    const totalPatients = await User.count({ where: { role: 'patient' } });
-    const totalDoctors = await User.count({ where: { role: 'doctor' } });
-    const totalAppointments = await Appointment.count();
-
     // Get today's appointments
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    console.log('Fetching appointments for date range:');
+    console.log('Today (start):', today.toISOString());
+    console.log('Tomorrow (end):', tomorrow.toISOString());
+
+    // First get all appointments to compare
+    const allAppointments = await Appointment.findAll({
+      attributes: ['id', 'date', 'status']
+    });
+    
+    console.log('All appointments:', allAppointments.map(a => ({
+      id: a.id,
+      date: a.date,
+      status: a.status
+    })));
+
     const appointmentsToday = await Appointment.count({
       where: {
         date: {
-          [Op.gte]: today
+          [Op.gte]: today,
+          [Op.lt]: tomorrow
+        },
+        status: {
+          [Op.notIn]: ['cancelled']
         }
       }
+    });
+
+    console.log('Appointments Today Count:', appointmentsToday);
+
+    // Get total counts - include all appointments regardless of status
+    const totalAppointments = await Appointment.count();
+
+    const totalPatients = await User.count({ where: { role: 'patient' } });
+    const totalDoctors = await User.count({ where: { role: 'doctor' } });
+
+    console.log('Final stats:', {
+      totalPatients,
+      totalDoctors,
+      totalAppointments,
+      appointmentsToday
     });
 
     // Generate last 12 months
@@ -365,6 +397,32 @@ router.delete('/users/:id', async (req, res) => {
     res.json({ message: 'User removed successfully' });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// Get all appointments with patient and doctor details
+router.get('/all-appointments', async (req, res) => {
+  try {
+    const appointments = await Appointment.findAll({
+      include: [
+        {
+          model: User,
+          as: 'patient',
+          attributes: ['name', 'email']
+        },
+        {
+          model: User,
+          as: 'doctor',
+          attributes: ['name', 'specialization']
+        }
+      ],
+      order: [['date', 'DESC']]
+    });
+
+    res.json(appointments);
+  } catch (err) {
+    console.error('Error fetching all appointments:', err);
+    res.status(500).json({ message: 'Failed to fetch appointments' });
   }
 });
 

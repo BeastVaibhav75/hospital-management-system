@@ -18,7 +18,7 @@ import {
   EventNote as EventNoteIcon,
   PersonAdd as PersonAddIcon,
   Assessment as AssessmentIcon,
-  ManageAccounts as ManageAccountsIcon
+  CalendarMonth as CalendarMonthIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -67,13 +67,25 @@ function AdminDashboard() {
         return;
       }
 
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/admin/stats`, {
+      console.log('Fetching admin stats...');
+      const response = await axios.get('http://localhost:5000/api/admin/stats', {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
+      
       console.log('Dashboard stats response:', response.data);
-      setStats(response.data);
+      
+      // Ensure we're getting the correct data structure
+      const statsData = {
+        totalDoctors: response.data.totalDoctors || 0,
+        totalPatients: response.data.totalPatients || 0,
+        totalAppointments: response.data.totalAppointments || 0,
+        appointmentsToday: response.data.appointmentsToday || 0
+      };
+      
+      console.log('Processed stats:', statsData);
+      setStats(statsData);
       setError(null);
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
@@ -197,10 +209,10 @@ function AdminDashboard() {
                 <Button
                   fullWidth
                   variant="outlined"
-                  startIcon={<ManageAccountsIcon />}
-                  onClick={() => navigate('/admin/manage-users')}
+                  startIcon={<CalendarMonthIcon />}
+                  onClick={() => navigate('/admin/appointments')}
                 >
-                  Manage Users
+                  Manage Appointments
                 </Button>
               </Grid>
             </Grid>
