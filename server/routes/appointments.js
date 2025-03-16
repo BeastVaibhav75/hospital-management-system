@@ -10,16 +10,12 @@ const isValidBookingTime = (date) => {
   const appointmentDate = new Date(date);
   const day = appointmentDate.getDay(); // 0 is Sunday, 1 is Monday, etc.
   const hours = appointmentDate.getHours();
-  const minutes = appointmentDate.getMinutes();
 
   // Check if it's weekend (0 is Sunday, 6 is Saturday)
   if (day === 0 || day === 6) return false;
 
   // Check if time is between 9 AM and 4 PM
   if (hours < 9 || hours >= 16) return false;
-
-  // Only allow bookings at the start of each hour
-  if (minutes !== 0) return false;
 
   return true;
 };
@@ -28,6 +24,8 @@ const isValidBookingTime = (date) => {
 router.post('/book', async (req, res) => {
   try {
     const { patientId, doctorId, date } = req.body;
+    
+    // Create a new date object and preserve the exact time
     const appointmentDate = new Date(date);
 
     // Validate appointment date and time
@@ -121,14 +119,16 @@ router.get('/available-slots', async (req, res) => {
     const { doctorId, date } = req.query;
     const queryDate = new Date(date);
     
-    // Generate all possible slots for the day
+    // Generate slots every 15 minutes
     const slots = [];
     for (let hour = 9; hour < 16; hour++) {
-      const slotDate = new Date(queryDate);
-      slotDate.setHours(hour, 0, 0, 0);
-      
-      if (isValidBookingTime(slotDate)) {
-        slots.push(slotDate);
+      for (let minute = 0; minute < 60; minute += 15) {
+        const slotDate = new Date(queryDate);
+        slotDate.setHours(hour, minute, 0, 0);
+        
+        if (isValidBookingTime(slotDate)) {
+          slots.push(slotDate);
+        }
       }
     }
 
@@ -153,7 +153,7 @@ router.get('/available-slots', async (req, res) => {
       // Filter out booked slots
       return !bookedAppointments.some(appointment => {
         const appointmentTime = new Date(appointment.date);
-        return appointmentTime.getHours() === slot.getHours();
+        return appointmentTime.getTime() === slot.getTime();
       });
     });
 

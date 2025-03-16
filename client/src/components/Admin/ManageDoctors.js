@@ -29,6 +29,8 @@ function ManageDoctors() {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [formError, setFormError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -41,10 +43,39 @@ function ManageDoctors() {
     specialization: '',
     experience: ''
   });
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     fetchDoctors();
   }, []);
+
+  // Clear messages after timeout
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (formError) {
+      const timer = setTimeout(() => {
+        setFormError(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [formError]);
 
   const fetchDoctors = async () => {
     try {
@@ -74,36 +105,103 @@ function ManageDoctors() {
   const handleDeleteDoctor = async (doctorId) => {
     if (window.confirm('Are you sure you want to delete this doctor?')) {
       try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Please login to perform this action');
+          return;
+        }
+
         await axios.delete(
           `${process.env.REACT_APP_API_URL}/admin/doctors/${doctorId}`,
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              Authorization: `Bearer ${token}`,
             },
           }
         );
+        setSuccessMessage('Doctor deleted successfully!');
+        setError(null);
         fetchDoctors();
       } catch (err) {
         console.error('Error deleting doctor:', err);
-        setError('Failed to delete doctor');
+        setError(err.response?.data?.message || 'Failed to delete doctor');
+        setSuccessMessage(null);
       }
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    if (!newDoctor.username.trim()) errors.username = 'Username is required';
+    if (!newDoctor.password.trim()) errors.password = 'Password is required';
+    if (!newDoctor.name.trim()) errors.name = 'Name is required';
+    if (!newDoctor.email.trim()) errors.email = 'Email is required';
+    if (!newDoctor.specialization.trim()) errors.specialization = 'Specialization is required';
+    if (!newDoctor.experience) errors.experience = 'Experience is required';
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (newDoctor.email && !emailRegex.test(newDoctor.email)) {
+      errors.email = 'Invalid email format';
+    }
+
+    // Experience validation
+    if (newDoctor.experience) {
+      const expValue = parseInt(newDoctor.experience);
+      if (isNaN(expValue) || expValue < 0 || expValue > 50) {
+        errors.experience = 'Experience must be between 0 and 50 years';
+      }
+    }
+
+    // Phone validation - only if phone is provided
+    if (newDoctor.phone.trim()) {
+      const phoneRegex = /^\d{10}$/;
+      if (!phoneRegex.test(newDoctor.phone)) {
+        errors.phone = 'Phone number must be 10 digits';
+      }
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleAddDoctor = async () => {
     try {
+      setFormError(null);
+      setSuccessMessage(null);
+      setError(null);
+      
+      if (!validateForm()) {
+        setFormError('Please fill in all required fields correctly');
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setFormError('Please login to perform this action');
+        return;
+      }
+
+      // Convert experience to number
+      const doctorData = {
+        ...newDoctor,
+        experience: parseInt(newDoctor.experience),
+        role: 'doctor'
+      };
+
       await axios.post(
         `${process.env.REACT_APP_API_URL}/admin/doctors`,
-        {
-          ...newDoctor,
-          role: 'doctor'
-        },
+        doctorData,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
         }
       );
+      
+      setSuccessMessage('Doctor added successfully!');
+      setError(null);
       setAddDialogOpen(false);
       setNewDoctor({
         username: '',
@@ -114,10 +212,12 @@ function ManageDoctors() {
         specialization: '',
         experience: ''
       });
+      setFormErrors({});
       fetchDoctors();
     } catch (err) {
       console.error('Error adding doctor:', err);
-      setError('Failed to add doctor');
+      setFormError(err.response?.data?.message || 'Failed to add doctor');
+      setSuccessMessage(null);
     }
   };
 
@@ -137,7 +237,12 @@ function ManageDoctors() {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => setAddDialogOpen(true)}
+            onClick={() => {
+              setAddDialogOpen(true);
+              setFormError(null);
+              setSuccessMessage(null);
+              setFormErrors({});
+            }}
           >
             Add Doctor
           </Button>
@@ -146,6 +251,12 @@ function ManageDoctors() {
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
+          </Alert>
+        )}
+
+        {successMessage && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {successMessage}
           </Alert>
         )}
 
@@ -227,20 +338,34 @@ function ManageDoctors() {
       {/* Add Doctor Dialog */}
       <Dialog
         open={addDialogOpen}
-        onClose={() => setAddDialogOpen(false)}
+        onClose={() => {
+          setAddDialogOpen(false);
+          setFormError(null);
+          setFormErrors({});
+        }}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle>Add New Doctor</DialogTitle>
         <DialogContent>
+          {formError && (
+            <Alert severity="error" sx={{ mb: 2, mt: 2 }}>
+              {formError}
+            </Alert>
+          )}
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Username"
                 value={newDoctor.username}
-                onChange={(e) => setNewDoctor({ ...newDoctor, username: e.target.value })}
+                onChange={(e) => {
+                  setNewDoctor({ ...newDoctor, username: e.target.value });
+                  setFormErrors({ ...formErrors, username: '' });
+                }}
                 required
+                error={!!formErrors.username}
+                helperText={formErrors.username}
               />
             </Grid>
             <Grid item xs={12}>
@@ -249,8 +374,13 @@ function ManageDoctors() {
                 label="Password"
                 type="password"
                 value={newDoctor.password}
-                onChange={(e) => setNewDoctor({ ...newDoctor, password: e.target.value })}
+                onChange={(e) => {
+                  setNewDoctor({ ...newDoctor, password: e.target.value });
+                  setFormErrors({ ...formErrors, password: '' });
+                }}
                 required
+                error={!!formErrors.password}
+                helperText={formErrors.password}
               />
             </Grid>
             <Grid item xs={12}>
@@ -258,8 +388,13 @@ function ManageDoctors() {
                 fullWidth
                 label="Name"
                 value={newDoctor.name}
-                onChange={(e) => setNewDoctor({ ...newDoctor, name: e.target.value })}
+                onChange={(e) => {
+                  setNewDoctor({ ...newDoctor, name: e.target.value });
+                  setFormErrors({ ...formErrors, name: '' });
+                }}
                 required
+                error={!!formErrors.name}
+                helperText={formErrors.name}
               />
             </Grid>
             <Grid item xs={12}>
@@ -268,8 +403,13 @@ function ManageDoctors() {
                 label="Email"
                 type="email"
                 value={newDoctor.email}
-                onChange={(e) => setNewDoctor({ ...newDoctor, email: e.target.value })}
+                onChange={(e) => {
+                  setNewDoctor({ ...newDoctor, email: e.target.value });
+                  setFormErrors({ ...formErrors, email: '' });
+                }}
                 required
+                error={!!formErrors.email}
+                helperText={formErrors.email}
               />
             </Grid>
             <Grid item xs={12}>
@@ -277,8 +417,12 @@ function ManageDoctors() {
                 fullWidth
                 label="Phone"
                 value={newDoctor.phone}
-                onChange={(e) => setNewDoctor({ ...newDoctor, phone: e.target.value })}
-                required
+                onChange={(e) => {
+                  setNewDoctor({ ...newDoctor, phone: e.target.value });
+                  setFormErrors({ ...formErrors, phone: '' });
+                }}
+                error={!!formErrors.phone}
+                helperText={formErrors.phone}
               />
             </Grid>
             <Grid item xs={12}>
@@ -286,8 +430,13 @@ function ManageDoctors() {
                 fullWidth
                 label="Specialization"
                 value={newDoctor.specialization}
-                onChange={(e) => setNewDoctor({ ...newDoctor, specialization: e.target.value })}
+                onChange={(e) => {
+                  setNewDoctor({ ...newDoctor, specialization: e.target.value });
+                  setFormErrors({ ...formErrors, specialization: '' });
+                }}
                 required
+                error={!!formErrors.specialization}
+                helperText={formErrors.specialization}
               />
             </Grid>
             <Grid item xs={12}>
@@ -296,15 +445,27 @@ function ManageDoctors() {
                 label="Experience (years)"
                 type="number"
                 value={newDoctor.experience}
-                onChange={(e) => setNewDoctor({ ...newDoctor, experience: e.target.value })}
+                onChange={(e) => {
+                  setNewDoctor({ ...newDoctor, experience: e.target.value });
+                  setFormErrors({ ...formErrors, experience: '' });
+                }}
                 required
+                error={!!formErrors.experience}
+                helperText={formErrors.experience}
+                inputProps={{ min: 0, max: 50 }}
               />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddDoctor} variant="contained">Add Doctor</Button>
+          <Button onClick={() => {
+            setAddDialogOpen(false);
+            setFormError(null);
+            setFormErrors({});
+          }}>Cancel</Button>
+          <Button onClick={handleAddDoctor} variant="contained" color="primary">
+            Add Doctor
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>

@@ -10,6 +10,7 @@ const { Op } = require('sequelize');
 const User = require('../models/User');
 const Appointment = require('../models/Appointment');
 
+// Public routes (no authentication required)
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -30,7 +31,196 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.use(verifyToken, verifyRole('admin'));
+// Protected routes (authentication required)
+// Apply authentication middleware to all routes below this point
+const authenticateAdmin = [verifyToken, verifyRole('admin')];
+router.use(authenticateAdmin);
+
+// Doctor Management
+router.get('/doctors', async (req, res) => {
+  try {
+    const doctors = await User.findAll({
+      where: { role: 'doctor' },
+      attributes: ['id', 'username', 'name', 'phone', 'email', 'specialization', 'experience', 'createdAt']
+    });
+    res.json(doctors);
+  } catch (err) {
+    console.error('Error fetching doctors:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/doctors', async (req, res) => {
+  try {
+    const { username, password, name, email, phone, specialization, experience } = req.body;
+
+    // Check if username or email already exists
+    const existingUser = await User.findOne({
+      where: {
+        [Op.or]: [
+          { username: username },
+          { email: email }
+        ]
+      }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: existingUser.username === username 
+          ? 'Username already exists' 
+          : 'Email already exists'
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new doctor
+    const newDoctor = await User.create({
+      username,
+      password: hashedPassword,
+      name,
+      email,
+      phone,
+      specialization,
+      experience,
+      role: 'doctor'
+    });
+
+    // Remove password from response
+    const { password: _, ...doctorData } = newDoctor.toJSON();
+
+    res.status(201).json(doctorData);
+  } catch (err) {
+    console.error('Error adding doctor:', err);
+    res.status(500).json({ 
+      message: err.message || 'Error adding doctor',
+      details: err.errors?.map(e => e.message) || []
+    });
+  }
+});
+
+router.delete('/doctors/:id', async (req, res) => {
+  try {
+    const doctorId = req.params.id;
+    
+    // Check if doctor exists and is actually a doctor
+    const doctor = await User.findOne({
+      where: { id: doctorId, role: 'doctor' }
+    });
+    
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' });
+    }
+
+    // Delete doctor's appointments first
+    await Appointment.destroy({
+      where: { doctorId }
+    });
+
+    // Then delete the doctor
+    await User.destroy({
+      where: { id: doctorId }
+    });
+
+    res.json({ message: 'Doctor deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting doctor:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Patient Management
+router.get('/patients', async (req, res) => {
+  try {
+    const patients = await User.findAll({
+      where: { role: 'patient' },
+      attributes: ['id', 'username', 'name', 'phone', 'email', 'createdAt']
+    });
+    res.json(patients);
+  } catch (err) {
+    console.error('Error fetching patients:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post('/patients', async (req, res) => {
+  try {
+    const { username, password, name, email, phone } = req.body;
+
+    // Check if username or email already exists
+    const existingUser = await User.findOne({
+      where: {
+        [Op.or]: [
+          { username: username },
+          { email: email }
+        ]
+      }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        message: existingUser.username === username 
+          ? 'Username already exists' 
+          : 'Email already exists'
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new patient
+    const newPatient = await User.create({
+      username,
+      password: hashedPassword,
+      name,
+      email,
+      phone,
+      role: 'patient'
+    });
+
+    // Remove password from response
+    const { password: _, ...patientData } = newPatient.toJSON();
+
+    res.status(201).json(patientData);
+  } catch (err) {
+    console.error('Error adding patient:', err);
+    res.status(500).json({ 
+      message: err.message || 'Error adding patient',
+      details: err.errors?.map(e => e.message) || []
+    });
+  }
+});
+
+router.delete('/patients/:id', async (req, res) => {
+  try {
+    const patientId = req.params.id;
+    
+    // Check if patient exists and is actually a patient
+    const patient = await User.findOne({
+      where: { id: patientId, role: 'patient' }
+    });
+    
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+
+    // Delete patient's appointments first
+    await Appointment.destroy({
+      where: { patientId }
+    });
+
+    // Then delete the patient
+    await User.destroy({
+      where: { id: patientId }
+    });
+
+    res.json({ message: 'Patient deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting patient:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // View Statistics
 router.get('/stats', async (req, res) => {
@@ -174,50 +364,6 @@ router.delete('/users/:id', async (req, res) => {
     await User.destroy({ where: { id: userId } });
     res.json({ message: 'User removed successfully' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// Manage Patients
-router.get('/patients', async (req, res) => {
-  try {
-    const patients = await User.findAll({
-      where: { role: 'patient' },
-      attributes: ['id', 'username', 'name', 'phone', 'email', 'createdAt']
-    });
-    res.json(patients);
-  } catch (err) {
-    console.error('Error fetching patients:', err);
-    res.status(500).json({ message: err.message });
-  }
-});
-
-router.delete('/patients/:id', async (req, res) => {
-  try {
-    const patientId = req.params.id;
-    
-    // Check if patient exists and is actually a patient
-    const patient = await User.findOne({
-      where: { id: patientId, role: 'patient' }
-    });
-    
-    if (!patient) {
-      return res.status(404).json({ message: 'Patient not found' });
-    }
-
-    // Delete patient's appointments first
-    await Appointment.destroy({
-      where: { patientId }
-    });
-
-    // Then delete the patient
-    await User.destroy({
-      where: { id: patientId }
-    });
-
-    res.json({ message: 'Patient deleted successfully' });
-  } catch (err) {
-    console.error('Error deleting patient:', err);
     res.status(500).json({ message: err.message });
   }
 });

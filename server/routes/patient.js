@@ -14,27 +14,26 @@ router.use(verifyToken, verifyRole('patient'));
 router.post('/book', async (req, res) => {
   const { doctorId, date } = req.body;
 
-  // Validate input
-  if (!doctorId || !date) {
-    return res.status(400).json({ message: 'Doctor ID and date are required.' });
-  }
-
-  console.log('Received booking request:');
-  console.log('Doctor ID:', doctorId);
-  console.log('Date:', date);
-  console.log('Patient ID (req.userId):', req.userId);
-
+  try {
+    // Validate input
+    if (!doctorId || !date) {
+      return res.status(400).json({ message: 'Doctor ID and date are required.' });
+    }
 
     const appointment = await Appointment.create({
       doctorId,
       patientId: req.userId,
       date,
     });
-    
-    console.log('Appointment created:', appointment);
-    
- 
-  
+
+    res.status(201).json({ 
+      message: 'Appointment booked successfully',
+      appointment 
+    });
+  } catch (err) {
+    console.error('Error booking appointment:', err);
+    res.status(500).json({ message: 'Failed to book appointment' });
+  }
 });
 
 // Cancel Appointment

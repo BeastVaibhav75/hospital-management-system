@@ -7,7 +7,7 @@ router.get('/doctors', async (req, res) => {
   try {
     const doctors = await User.findAll({
       where: { role: 'doctor' },
-      attributes: ['id', 'name', 'email'] // Only send necessary information
+      attributes: ['id', 'name', 'email', 'specialization', 'experience'] // Added specialization and experience
     });
     res.json(doctors);
   } catch (error) {

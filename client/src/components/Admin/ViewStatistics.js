@@ -14,12 +14,14 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend,
   ArcElement
 } from 'chart.js';
-import { Bar, Pie } from 'react-chartjs-2';
+import { Bar, Pie, Line } from 'react-chartjs-2';
 import axios from 'axios';
 
 // Register ChartJS components
@@ -27,6 +29,8 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend,
@@ -80,9 +84,11 @@ const ViewStatistics = () => {
       {
         label: 'Appointments',
         data: stats.appointmentsByMonth?.map(item => item.count) || [],
-        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
         borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true
       }
     ]
   };
@@ -119,9 +125,11 @@ const ViewStatistics = () => {
       {
         label: 'New Patients',
         data: stats.patientGrowth?.map(item => item.count) || [],
-        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
         borderColor: 'rgba(75, 192, 192, 1)',
-        borderWidth: 1
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true
       }
     ]
   };
@@ -140,6 +148,32 @@ const ViewStatistics = () => {
     scales: {
       y: {
         beginAtZero: true
+      }
+    }
+  };
+
+  const lineChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'Monthly Trends'
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          drawBorder: false
+        }
+      },
+      x: {
+        grid: {
+          display: false
+        }
       }
     }
   };
@@ -194,9 +228,9 @@ const ViewStatistics = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Appointments by Month
+              Appointments Trend
             </Typography>
-            <Bar data={appointmentsData} options={chartOptions} />
+            <Line data={appointmentsData} options={lineChartOptions} />
           </Paper>
         </Grid>
 
@@ -214,9 +248,9 @@ const ViewStatistics = () => {
         <Grid item xs={12}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Patient Growth
+              Patient Growth Trend
             </Typography>
-            <Bar data={patientGrowthData} options={chartOptions} />
+            <Line data={patientGrowthData} options={lineChartOptions} />
           </Paper>
         </Grid>
       </Grid>
