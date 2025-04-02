@@ -19,6 +19,7 @@ import BookAppointment from './components/BookAppointment';
 import ViewAppointments from './components/Doctor/ViewAppointments';
 import TodayAppointments from './components/Doctor/TodayAppointments';
 import ViewStatistics from './components/Admin/ViewStatistics';
+import ManageUsers from './components/Admin/ManageUsers';
 import ManageDoctors from './components/Admin/ManageDoctors';
 import ManagePatients from './components/Admin/ManagePatients';
 import PatientAppointments from './components/Patient/PatientAppointments';
@@ -30,10 +31,7 @@ import DoctorPatients from './components/Doctor/DoctorPatients';
 
 function App() {
   return (
-    <Router future={{ 
-      v7_startTransition: true,
-      v7_relativeSplatPath: true 
-    }}>
+    <Router>
       <div className="app-container">
         <NavBar />
         <div className="content-container">

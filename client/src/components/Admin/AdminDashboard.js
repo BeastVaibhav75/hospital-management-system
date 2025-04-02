@@ -39,9 +39,14 @@ function AdminDashboard() {
 
   const fetchAdminInfo = async () => {
     try {
+      console.log('Fetching admin info from localStorage');
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      console.log('Retrieved user info:', userInfo);
       if (userInfo && userInfo.name) {
+        console.log('Setting admin name to:', userInfo.name);
         setAdminName(userInfo.name);
+      } else {
+        console.log('No name found in user info');
       }
     } catch (err) {
       console.error('Error fetching admin info:', err);

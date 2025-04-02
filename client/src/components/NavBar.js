@@ -72,7 +72,7 @@ function NavBar() {
               <>
                 <Nav.Link 
                   as={Link} 
-                  to={`/${userRole.toLowerCase()}/dashboard`} 
+                  to={`/${userRole?.toLowerCase() || ''}/dashboard`} 
                   className="me-3"
                   onClick={() => setExpanded(false)}
                 >
