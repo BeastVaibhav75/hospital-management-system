@@ -43,15 +43,24 @@ function DoctorLogin() {
       const response = await axios.post(
         `${process.env.REACT_APP_API_URL}/auth/login`,
         {
-          ...formData,
+          username: formData.username,
+          password: formData.password,
           role: 'doctor'
         }
       );
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('role', 'DOCTOR');
-      navigate('/doctor/dashboard', { replace: true });
+
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('userInfo', JSON.stringify({
+        id: user.id,
+        name: user.name,
+        role: user.role
+      }));
+
+      navigate('/doctor/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'An error occurred during login');
+      console.error('Login error:', err);
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -300,26 +300,96 @@ function ManagePatients() {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Patient Details</DialogTitle>
-        <DialogContent>
+        <DialogTitle sx={{ 
+          backgroundColor: '#f5f5f5',
+          borderBottom: '2px solid #e0e0e0',
+          padding: '16px 24px'
+        }}>
+          <Typography variant="h5" component="div" sx={{ fontWeight: 'bold' }}>
+            Patient Details
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ padding: '24px' }}>
           {selectedPatient && (
-            <Grid container spacing={2}>
+            <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1"><strong>Name:</strong> {selectedPatient.name}</Typography>
-                <Typography variant="subtitle1"><strong>Email:</strong> {selectedPatient.email}</Typography>
-                <Typography variant="subtitle1"><strong>Phone:</strong> {selectedPatient.phone}</Typography>
-                <Typography variant="subtitle1"><strong>Username:</strong> {selectedPatient.username}</Typography>
+                <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f8f9fa' }}>
+                  <Typography variant="h6" gutterBottom sx={{ color: '#1976d2', fontWeight: 'bold' }}>
+                    Personal Information
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Name:</strong> {selectedPatient.name}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Email:</strong> {selectedPatient.email}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Phone:</strong> {selectedPatient.phone}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Username:</strong> {selectedPatient.username}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Joined:</strong> {new Date(selectedPatient.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1"><strong>Total Appointments:</strong> {selectedPatient.totalAppointments || 0}</Typography>
-                <Typography variant="subtitle1"><strong>Completed Appointments:</strong> {selectedPatient.completedAppointments || 0}</Typography>
-                <Typography variant="subtitle1"><strong>Pending Appointments:</strong> {selectedPatient.pendingAppointments || 0}</Typography>
+                <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f8f9fa' }}>
+                  <Typography variant="h6" gutterBottom sx={{ color: '#1976d2', fontWeight: 'bold' }}>
+                    Appointment Statistics
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Total Appointments:</strong> {selectedPatient.totalAppointments || 0}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Completed Appointments:</strong> {selectedPatient.completedAppointments || 0}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Pending Appointments:</strong> {selectedPatient.pendingAppointments || 0}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
               </Grid>
             </Grid>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
+        <DialogActions sx={{ 
+          padding: '16px 24px',
+          borderTop: '2px solid #e0e0e0',
+          backgroundColor: '#f5f5f5'
+        }}>
+          <Button 
+            onClick={() => setViewDialogOpen(false)}
+            variant="contained"
+            sx={{
+              backgroundColor: '#1976d2',
+              '&:hover': {
+                backgroundColor: '#1565c0'
+              }
+            }}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
 

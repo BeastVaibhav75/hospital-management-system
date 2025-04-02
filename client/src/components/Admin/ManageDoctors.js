@@ -97,9 +97,28 @@ function ManageDoctors() {
     }
   };
 
-  const handleViewDoctor = (doctor) => {
-    setSelectedDoctor(doctor);
-    setViewDialogOpen(true);
+  const handleViewDoctor = async (doctor) => {
+    try {
+      // Fetch fresh data for the selected doctor
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/admin/doctors`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+      
+      // Find the updated doctor data
+      const updatedDoctor = response.data.find(d => d.id === doctor.id);
+      if (updatedDoctor) {
+        setSelectedDoctor(updatedDoctor);
+        setViewDialogOpen(true);
+      }
+    } catch (err) {
+      console.error('Error fetching doctor details:', err);
+      setError('Failed to load doctor details');
+    }
   };
 
   const handleDeleteDoctor = async (doctorId) => {
@@ -310,28 +329,111 @@ function ManageDoctors() {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Doctor Details</DialogTitle>
-        <DialogContent>
+        <DialogTitle sx={{ 
+          backgroundColor: '#f5f5f5',
+          borderBottom: '2px solid #e0e0e0',
+          padding: '16px 24px'
+        }}>
+          <Typography variant="h5" component="div" sx={{ fontWeight: 'bold' }}>
+            Doctor Details
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ padding: '24px' }}>
           {selectedDoctor && (
-            <Grid container spacing={2}>
+            <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1"><strong>Name:</strong> {selectedDoctor.name}</Typography>
-                <Typography variant="subtitle1"><strong>Specialization:</strong> {selectedDoctor.specialization}</Typography>
-                <Typography variant="subtitle1"><strong>Experience:</strong> {selectedDoctor.experience} years</Typography>
-                <Typography variant="subtitle1"><strong>Email:</strong> {selectedDoctor.email}</Typography>
-                <Typography variant="subtitle1"><strong>Phone:</strong> {selectedDoctor.phone}</Typography>
+                <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f8f9fa' }}>
+                  <Typography variant="h6" gutterBottom sx={{ color: '#1976d2', fontWeight: 'bold' }}>
+                    Personal Information
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Name:</strong> {selectedDoctor.name}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Specialization:</strong> {selectedDoctor.specialization}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Experience:</strong> {selectedDoctor.experience} years
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Email:</strong> {selectedDoctor.email}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Phone:</strong> {selectedDoctor.phone}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Username:</strong> {selectedDoctor.username}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Joined:</strong> {new Date(selectedDoctor.createdAt).toLocaleDateString()}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Typography variant="subtitle1"><strong>Patients Today:</strong> {selectedDoctor.patientsToday || 0}</Typography>
-                <Typography variant="subtitle1"><strong>Total Patients:</strong> {selectedDoctor.totalPatients || 0}</Typography>
-                <Typography variant="subtitle1"><strong>Appointments Today:</strong> {selectedDoctor.appointmentsToday || 0}</Typography>
-                <Typography variant="subtitle1"><strong>Total Appointments:</strong> {selectedDoctor.totalAppointments || 0}</Typography>
+                <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f8f9fa' }}>
+                  <Typography variant="h6" gutterBottom sx={{ color: '#1976d2', fontWeight: 'bold' }}>
+                    Statistics
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Patients Today:</strong> {selectedDoctor.patientsToday || 0}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Total Patients:</strong> {selectedDoctor.totalPatients || 0}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Appointments Today:</strong> {selectedDoctor.appointmentsToday || 0}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        <strong style={{ color: '#666' }}>Total Appointments:</strong> {selectedDoctor.totalAppointments || 0}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
               </Grid>
             </Grid>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
+        <DialogActions sx={{ 
+          padding: '16px 24px',
+          borderTop: '2px solid #e0e0e0',
+          backgroundColor: '#f5f5f5'
+        }}>
+          <Button 
+            onClick={() => setViewDialogOpen(false)}
+            variant="contained"
+            sx={{
+              backgroundColor: '#1976d2',
+              '&:hover': {
+                backgroundColor: '#1565c0'
+              }
+            }}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
 

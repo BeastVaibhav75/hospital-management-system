@@ -25,8 +25,11 @@ router.post('/book', async (req, res) => {
   try {
     const { patientId, doctorId, date } = req.body;
     
-    // Create a new date object and preserve the exact time
+    console.log('Received date from frontend:', date);
+    
+    // Simply create a new date object from the string
     const appointmentDate = new Date(date);
+    console.log('Appointment date:', appointmentDate.toLocaleString());
 
     // Validate appointment date and time
     if (!isValidBookingTime(appointmentDate)) {
@@ -73,13 +76,15 @@ router.post('/book', async (req, res) => {
       return res.status(409).json({ message: 'This slot is already booked' });
     }
 
-    // Create appointment
+    // Create appointment with the exact date
     const appointment = await Appointment.create({
       patientId,
       doctorId,
       date: appointmentDate,
       status: 'booked'
     });
+
+    console.log('Stored appointment date:', appointment.date);
 
     // Send confirmation email
     const appointmentDetails = {
@@ -100,7 +105,6 @@ router.post('/book', async (req, res) => {
       await sendAppointmentConfirmation(patient.phone, appointmentDetails, patient.email);
     } catch (emailError) {
       console.error('Failed to send email confirmation:', emailError);
-      // Don't fail the appointment booking if email fails
     }
 
     res.status(201).json({
@@ -117,9 +121,13 @@ router.post('/book', async (req, res) => {
 router.get('/available-slots', async (req, res) => {
   try {
     const { doctorId, date } = req.query;
-    const queryDate = new Date(date);
+    console.log('Received date for slots:', date);
     
-    // Generate slots every 15 minutes
+    // Create a new date object from the input date string
+    const queryDate = new Date(date);
+    console.log('Query date:', queryDate.toLocaleString());
+    
+    // Generate slots every 15 minutes in local time
     const slots = [];
     for (let hour = 9; hour < 16; hour++) {
       for (let minute = 0; minute < 60; minute += 15) {
@@ -132,13 +140,20 @@ router.get('/available-slots', async (req, res) => {
       }
     }
 
-    // Get booked appointments
+    // Get booked appointments for the selected date
+    const startOfDay = new Date(queryDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(queryDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    console.log('Searching for appointments between:', startOfDay.toLocaleString(), 'and', endOfDay.toLocaleString());
+
     const bookedAppointments = await Appointment.findAll({
       where: {
         doctorId,
         date: {
-          [Op.gte]: new Date(queryDate.setHours(0, 0, 0, 0)),
-          [Op.lt]: new Date(queryDate.setHours(23, 59, 59, 999))
+          [Op.gte]: startOfDay,
+          [Op.lt]: endOfDay
         },
         status: 'booked'
       }
@@ -157,6 +172,7 @@ router.get('/available-slots', async (req, res) => {
       });
     });
 
+    console.log('Available slots:', availableSlots.map(slot => slot.toLocaleString()));
     res.json({ availableSlots });
   } catch (error) {
     console.error('Error getting available slots:', error);

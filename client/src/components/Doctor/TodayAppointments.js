@@ -95,9 +95,15 @@ function TodayAppointments() {
   const formatAppointmentTime = (dateString) => {
     try {
       const date = new Date(dateString);
-      return format(date, 'hh:mm a');
+      // Convert UTC to local time
+      const localDate = new Date(date.getTime() + (5.5 * 60 * 60 * 1000)); // Add 5.5 hours for IST
+      return localDate.toLocaleString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
     } catch (error) {
-      console.error('Error formatting date:', error);
+      console.error('Error formatting time:', error);
       return 'Invalid Time';
     }
   };

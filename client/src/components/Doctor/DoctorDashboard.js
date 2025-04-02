@@ -1,7 +1,20 @@
 // client/src/components/Doctor/DoctorDashboard.js
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Alert } from 'react-bootstrap';
-import { FaCalendarCheck, FaUserInjured, FaClock } from 'react-icons/fa';
+import {
+  Container,
+  Grid,
+  Typography,
+  Box,
+  CircularProgress,
+  Alert,
+  Card,
+  CardContent
+} from '@mui/material';
+import {
+  Event as EventIcon,
+  AccessTime as AccessTimeIcon,
+  People as PeopleIcon
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './DoctorDashboard.css';
@@ -13,129 +26,158 @@ function DoctorDashboard() {
     todayAppointments: 0,
     totalPatients: 0
   });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [doctorName, setDoctorName] = useState('');
 
   useEffect(() => {
-    const fetchDashboardStats = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          navigate('/doctor/login');
-          return;
-        }
+    fetchStats();
+    fetchDoctorInfo();
+  }, []);
 
-        const response = await axios.get(
-          `${process.env.REACT_APP_API_URL}/doctor/dashboard-stats`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          }
-        );
-
-        if (response.data) {
-          setStats(response.data);
-          setError('');
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-        if (error.response?.status === 401 || error.response?.status === 403) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          navigate('/doctor/login');
-        } else {
-          setError('Failed to load dashboard statistics. Please try again later.');
-        }
-      } finally {
-        setLoading(false);
+  const fetchDoctorInfo = async () => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      if (userInfo && userInfo.name) {
+        setDoctorName(userInfo.name);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching doctor info:', err);
+    }
+  };
 
-    fetchDashboardStats();
-  }, [navigate]);
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
 
-  const handleCardClick = (route) => {
-    navigate(route);
+  const handleCardClick = (path) => {
+    navigate(path);
+  };
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to view dashboard');
+        return;
+      }
+
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/doctor/dashboard-stats`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setStats(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+      setError(err.response?.data?.message || 'Failed to load dashboard statistics');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
     return (
-      <div className="dashboard-container">
-        <Container>
-          <div className="text-center py-5">Loading...</div>
-        </Container>
-      </div>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
     <div className="dashboard-container">
       <Container>
-        <h2 className="dashboard-title">Doctor Dashboard</h2>
-        
         {error && (
-          <Alert variant="danger" className="mb-4">
+          <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
 
-        <Row className="g-4">
-          <Col md={6} lg={4}>
+        <div className="greeting-section">
+          <Typography variant="h4" className="greeting-text">
+            {getGreeting()}, {doctorName}!
+          </Typography>
+          <Typography variant="subtitle1" className="greeting-subtitle">
+            Welcome to your doctor dashboard
+          </Typography>
+        </div>
+
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card 
               className="dashboard-card"
               onClick={() => handleCardClick('/doctor/appointments')}
             >
-              <Card.Body>
-                <div className="d-flex align-items-center">
-                  <div className="icon-wrapper bg-primary">
-                    <FaCalendarCheck className="dashboard-icon" />
-                  </div>
-                  <div className="ms-3">
-                    <h6 className="card-subtitle">Total Appointments</h6>
-                    <h3 className="card-value">{stats.totalAppointments}</h3>
-                  </div>
-                </div>
-              </Card.Body>
+              <CardContent>
+                <Box display="flex" alignItems="center">
+                  <Box className="icon-wrapper bg-primary">
+                    <EventIcon className="dashboard-icon" />
+                  </Box>
+                  <Box ml={2}>
+                    <Typography variant="subtitle2" color="textSecondary">
+                      Total Appointments
+                    </Typography>
+                    <Typography variant="h4">
+                      {stats.totalAppointments}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
             </Card>
-          </Col>
-          <Col md={6} lg={4}>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
             <Card 
               className="dashboard-card"
               onClick={() => handleCardClick('/doctor/today-appointments')}
             >
-              <Card.Body>
-                <div className="d-flex align-items-center">
-                  <div className="icon-wrapper bg-success">
-                    <FaClock className="dashboard-icon" />
-                  </div>
-                  <div className="ms-3">
-                    <h6 className="card-subtitle">Today's Appointments</h6>
-                    <h3 className="card-value">{stats.todayAppointments}</h3>
-                  </div>
-                </div>
-              </Card.Body>
+              <CardContent>
+                <Box display="flex" alignItems="center">
+                  <Box className="icon-wrapper bg-success">
+                    <AccessTimeIcon className="dashboard-icon" />
+                  </Box>
+                  <Box ml={2}>
+                    <Typography variant="subtitle2" color="textSecondary">
+                      Today's Appointments
+                    </Typography>
+                    <Typography variant="h4">
+                      {stats.todayAppointments}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
             </Card>
-          </Col>
-          <Col md={6} lg={4}>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
             <Card 
               className="dashboard-card"
               onClick={() => handleCardClick('/doctor/patients')}
             >
-              <Card.Body>
-                <div className="d-flex align-items-center">
-                  <div className="icon-wrapper bg-info">
-                    <FaUserInjured className="dashboard-icon" />
-                  </div>
-                  <div className="ms-3">
-                    <h6 className="card-subtitle">Total Patients</h6>
-                    <h3 className="card-value">{stats.totalPatients}</h3>
-                  </div>
-                </div>
-              </Card.Body>
+              <CardContent>
+                <Box display="flex" alignItems="center">
+                  <Box className="icon-wrapper bg-info">
+                    <PeopleIcon className="dashboard-icon" />
+                  </Box>
+                  <Box ml={2}>
+                    <Typography variant="subtitle2" color="textSecondary">
+                      Total Patients
+                    </Typography>
+                    <Typography variant="h4">
+                      {stats.totalPatients}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
             </Card>
-          </Col>
-        </Row>
+          </Grid>
+        </Grid>
       </Container>
     </div>
   );

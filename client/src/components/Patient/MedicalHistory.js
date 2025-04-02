@@ -90,7 +90,7 @@ function MedicalHistory() {
           <Alert severity="info">No medical records found.</Alert>
         ) : (
           records.map((record) => (
-            <Accordion key={record._id} sx={{ mb: 2 }}>
+            <Accordion key={record.id} sx={{ mb: 2 }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography>
                   <strong>{formatDate(record.date)}</strong> - Dr. {record.doctor.name}

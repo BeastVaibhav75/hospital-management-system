@@ -27,7 +27,22 @@ const Appointment = sequelize.define('Appointment', {
   },
   date: {
     type: DataTypes.DATE,
-    allowNull: false
+    allowNull: false,
+    get() {
+      const value = this.getDataValue('date');
+      if (value) {
+        return new Date(value.getTime() - value.getTimezoneOffset() * 60000);
+      }
+      return value;
+    },
+    set(value) {
+      if (value) {
+        const date = new Date(value);
+        this.setDataValue('date', new Date(date.getTime() + date.getTimezoneOffset() * 60000));
+      } else {
+        this.setDataValue('date', value);
+      }
+    }
   },
   status: {
     type: DataTypes.ENUM('pending', 'booked', 'completed', 'cancelled'),

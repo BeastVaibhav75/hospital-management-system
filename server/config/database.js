@@ -11,7 +11,7 @@ const sequelize = new Sequelize(
     dialectOptions: {
       dateStrings: true,
       typeCast: true,
-      timezone: '+05:30' // IST timezone
+      timezone: 'local'
     },
     define: {
       timestamps: true,

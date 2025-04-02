@@ -25,7 +25,12 @@ router.post('/login', async (req, res) => {
       expiresIn: '1d',
     });
 
-    res.json({ token, role: user.role });
+    res.json({ 
+      token, 
+      role: user.role,
+      id: user.id,
+      name: user.name
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -43,7 +48,74 @@ router.get('/doctors', async (req, res) => {
       where: { role: 'doctor' },
       attributes: ['id', 'username', 'name', 'phone', 'email', 'specialization', 'experience', 'createdAt']
     });
-    res.json(doctors);
+
+    // Get statistics for each doctor
+    const doctorsWithStats = await Promise.all(
+      doctors.map(async (doctor) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Get today's appointments
+        const appointmentsToday = await Appointment.count({
+          where: {
+            doctorId: doctor.id,
+            date: {
+              [Op.gte]: today
+            },
+            status: {
+              [Op.in]: ['booked', 'completed']
+            }
+          }
+        });
+
+        // Get total appointments
+        const totalAppointments = await Appointment.count({
+          where: {
+            doctorId: doctor.id,
+            status: {
+              [Op.in]: ['booked', 'completed']
+            }
+          }
+        });
+
+        // Get unique patients today
+        const patientsToday = await Appointment.count({
+          where: {
+            doctorId: doctor.id,
+            date: {
+              [Op.gte]: today
+            },
+            status: {
+              [Op.in]: ['booked', 'completed']
+            }
+          },
+          distinct: true,
+          col: 'patientId'
+        });
+
+        // Get total unique patients
+        const totalPatients = await Appointment.count({
+          where: {
+            doctorId: doctor.id,
+            status: {
+              [Op.in]: ['booked', 'completed']
+            }
+          },
+          distinct: true,
+          col: 'patientId'
+        });
+
+        return {
+          ...doctor.toJSON(),
+          appointmentsToday,
+          totalAppointments,
+          patientsToday,
+          totalPatients
+        };
+      })
+    );
+
+    res.json(doctorsWithStats);
   } catch (err) {
     console.error('Error fetching doctors:', err);
     res.status(500).json({ message: err.message });

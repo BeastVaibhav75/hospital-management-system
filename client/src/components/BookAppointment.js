@@ -140,10 +140,20 @@ const BookAppointment = () => {
       if (selectedDoctor && selectedDate) {
         setLoadingSlots(true);
         try {
+          // Create a new date object for the start of the selected date
+          const dateForSlots = new Date(selectedDate);
+          dateForSlots.setHours(0, 0, 0, 0);
+          
+          // Format the date string in local timezone
+          const dateString = `${dateForSlots.getFullYear()}-${String(dateForSlots.getMonth() + 1).padStart(2, '0')}-${String(dateForSlots.getDate()).padStart(2, '0')}T00:00:00`;
+          
+          console.log('Fetching slots for date:', dateString);
+          console.log('Local date:', dateForSlots.toLocaleString());
+          
           const response = await axios.get(`http://localhost:5000/api/appointments/available-slots`, {
             params: {
               doctorId: selectedDoctor,
-              date: selectedDate.toISOString()
+              date: dateString
             },
             headers: {
               'Authorization': `Bearer ${authInfo.token}`
@@ -188,6 +198,33 @@ const BookAppointment = () => {
     setSelectedSlot(null);
   };
 
+  const handleSlotSelect = (slot) => {
+    setSelectedSlot(slot);
+    const slotDate = new Date(slot);
+    const hours = slotDate.getHours();
+    const minutes = slotDate.getMinutes();
+    
+    console.log('Selected slot hours:', hours);
+    console.log('Selected slot minutes:', minutes);
+    
+    // Create a new date object for the selected date
+    const combinedDateTime = new Date(selectedDate);
+    combinedDateTime.setHours(hours, minutes, 0, 0);
+    
+    console.log('Combined date time:', combinedDateTime);
+    console.log('Local time:', combinedDateTime.toLocaleString());
+    
+    // Format the date string without timezone conversion
+    const year = combinedDateTime.getFullYear();
+    const month = String(combinedDateTime.getMonth() + 1).padStart(2, '0');
+    const day = String(combinedDateTime.getDate()).padStart(2, '0');
+    const hour = String(combinedDateTime.getHours()).padStart(2, '0');
+    const minute = String(combinedDateTime.getMinutes()).padStart(2, '0');
+    
+    const dateString = `${year}-${month}-${day}T${hour}:${minute}:00`;
+    console.log('Sending date string:', dateString);
+  };
+
   const handleBookAppointment = async () => {
     if (!authInfo.userInfo || !authInfo.token) {
       setError('Please log in to book an appointment');
@@ -204,20 +241,39 @@ const BookAppointment = () => {
 
     setLoading(true);
     try {
-      // Create a new date object with the selected date and time
+      // Create a new date object with the selected date
       const appointmentDateTime = new Date(selectedDate);
-      const selectedTime = new Date(selectedSlot);
       
-      // Set the time components
-      appointmentDateTime.setHours(selectedTime.getHours());
-      appointmentDateTime.setMinutes(selectedTime.getMinutes());
+      // Get hours and minutes from the selected slot
+      const hours = selectedSlot.getHours();
+      const minutes = selectedSlot.getMinutes();
+      
+      // Set the time components while preserving the date
+      appointmentDateTime.setHours(hours);
+      appointmentDateTime.setMinutes(minutes);
       appointmentDateTime.setSeconds(0);
       appointmentDateTime.setMilliseconds(0);
+
+      console.log('Selected date:', selectedDate);
+      console.log('Selected slot hours:', hours);
+      console.log('Selected slot minutes:', minutes);
+      console.log('Combined date time:', appointmentDateTime);
+      console.log('Local time:', appointmentDateTime.toLocaleString());
+
+      // Format the date string in local timezone without conversion
+      const year = appointmentDateTime.getFullYear();
+      const month = String(appointmentDateTime.getMonth() + 1).padStart(2, '0');
+      const day = String(appointmentDateTime.getDate()).padStart(2, '0');
+      const hour = String(appointmentDateTime.getHours()).padStart(2, '0');
+      const minute = String(appointmentDateTime.getMinutes()).padStart(2, '0');
+      
+      const dateString = `${year}-${month}-${day}T${hour}:${minute}:00`;
+      console.log('Sending date string:', dateString);
 
       const response = await axios.post('http://localhost:5000/api/appointments/book', {
         doctorId: selectedDoctor,
         patientId: authInfo.userInfo.id,
-        date: appointmentDateTime.toISOString()
+        date: dateString
       }, {
         headers: {
           'Content-Type': 'application/json',
@@ -377,16 +433,7 @@ const BookAppointment = () => {
                 <MobileTimePicker
                   label="Select Time"
                   value={selectedSlot}
-                  onChange={(newTime) => {
-                    if (!newTime) return;
-                    const hours = newTime.getHours();
-                    if (hours < 9 || hours >= 16) {
-                      setError('Selected time is outside hospital appointment hours (9:00 AM - 4:00 PM)');
-                    } else {
-                      setError(''); // Only clear the error if a valid time is selected
-                    }
-                    setSelectedSlot(newTime);
-                  }}
+                  onChange={handleSlotSelect}
                   disabled={loading}
                   ampm={true}
                   orientation="portrait"
